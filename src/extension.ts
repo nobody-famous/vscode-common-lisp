@@ -1,6 +1,6 @@
 import { format } from 'util'
 import * as vscode from 'vscode'
-import { Expr, exprToString, findAtom, findExpr, findInnerExpr, getLexTokens, Lexer, Parser, readLexTokens } from './lisp'
+import { Expr, exprToString, findAtom, findExpr, findInnerExpr, getLexTokens, Lexer, Parser, readLexTokens, SExpr } from './lisp'
 import { Colorizer, tokenModifiersLegend, tokenTypesLegend } from './vscode/colorize'
 import { CompletionProvider } from './vscode/CompletionProvider'
 import * as CreateSystem from './vscode/CreateSystem'
@@ -76,6 +76,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.nthRestart', nthRestart))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.macroExpand', macroExpand))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.macroExpandAll', macroExpandAll))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.disassemble', disassemble))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.loadFile', replLoadFile))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.createSystem', createSystem))
 
@@ -137,6 +138,44 @@ async function createSystem() {
 
 function strToMarkdown(text: string): string {
     return text.replace(/ /g, '&nbsp;').replace(/\n/g, '  \n')
+}
+
+async function disassemble() {
+    if (clRepl === undefined) {
+        vscode.window.showInformationMessage(`REPL not connected`)
+        return
+    }
+
+    const editor = vscode.window.activeTextEditor
+
+    if (editor === undefined || !hasValidLangId(editor.document)) {
+        return
+    }
+
+    try {
+        const expr = await getTopExpr()
+        if (expr === undefined || !(expr instanceof SExpr) || expr.parts.length < 2) {
+            return
+        }
+
+        const name = exprToString(expr.parts[1])
+        if (name === undefined) {
+            return
+        }
+
+        const pkg = pkgMgr.getPackageForLine(editor.document.fileName, expr.start.line)
+        const pkgName = pkg?.name ?? ':cl-user'
+        const result = await clRepl.disassemble(`'${name}`, pkgName)
+
+        if (result === undefined) {
+            return
+        }
+
+        hoverText = strToMarkdown(result)
+        vscode.commands.executeCommand('editor.action.showHover')
+    } catch (err) {
+        vscode.window.showErrorMessage(format(err))
+    }
 }
 
 async function macroExpand() {

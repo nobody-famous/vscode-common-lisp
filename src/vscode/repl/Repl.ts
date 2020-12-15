@@ -215,6 +215,21 @@ export class Repl extends EventEmitter {
         }
     }
 
+    async disassemble(text: string, pkg?: string): Promise<string | undefined> {
+        if (this.conn === undefined) {
+            return undefined
+        }
+
+        const resp = await this.conn.disassemble(text, pkg)
+
+        if (resp instanceof response.Eval) {
+            const converted = resp.result.map((i) => convert(i))
+            return unescape(converted.join(''))
+        }
+
+        return undefined
+    }
+    
     async macroExpand(text: string, pkg?: string): Promise<string | undefined> {
         if (this.conn === undefined) {
             return undefined

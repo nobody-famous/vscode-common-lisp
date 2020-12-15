@@ -124,6 +124,10 @@
                 "title": "Alive: Macro Expand All"
             },
             {
+                "command": "alive.disassemble",
+                "title": "Alive: Disassemble"
+            },
+            {
                 "command": "alive.loadFile",
                 "title": "Alive: Load File Into REPL"
             },
@@ -154,6 +158,10 @@
                 },
                 {
                     "command": "alive.macroExpandAll",
+                    "when": "editorLangId == lisp || editorLangId == lisp-repl"
+                },
+                {
+                    "command": "alive.disassemble",
                     "when": "editorLangId == lisp || editorLangId == lisp-repl"
                 },
                 {

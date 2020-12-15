@@ -76,7 +76,7 @@ async function testMacros() {
 
         conn.trace = true
 
-        const resp = await conn.macroExpand('(cond ((= a 1) (setf a 2)))')
+        const resp = await conn.disassemble('\'set-player-1', ':engine')
 
         console.log(resp)
     } finally {
