@@ -74,6 +74,8 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.replHistory', replHistory))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.debugAbort', debugAbort))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.nthRestart', nthRestart))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.macroExpand', macroExpand))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.macroExpandAll', macroExpandAll))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.loadFile', replLoadFile))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.createSystem', createSystem))
 
@@ -128,6 +130,80 @@ async function createSystem() {
 
     try {
         await CreateSystem.create(folder)
+    } catch (err) {
+        vscode.window.showErrorMessage(format(err))
+    }
+}
+
+function strToMarkdown(text: string): string {
+    return text.replace(/ /g, '&nbsp;').replace(/\n/g, '  \n')
+}
+
+async function macroExpand() {
+    if (clRepl === undefined) {
+        vscode.window.showInformationMessage(`REPL not connected`)
+        return
+    }
+
+    const editor = vscode.window.activeTextEditor
+
+    if (editor === undefined || !hasValidLangId(editor.document)) {
+        return
+    }
+
+    try {
+        const expr = await getInnerExpr(editor)
+        if (expr === undefined) {
+            return
+        }
+
+        const range = new vscode.Range(toVscodePos(expr.start), toVscodePos(expr.end))
+        const text = editor.document.getText(range)
+        const pkg = pkgMgr.getPackageForLine(editor.document.fileName, range.start.line)
+        const pkgName = pkg?.name ?? ':cl-user'
+        const result = await clRepl.macroExpand(text, pkgName)
+
+        if (result === undefined) {
+            return
+        }
+
+        hoverText = strToMarkdown(result)
+        vscode.commands.executeCommand('editor.action.showHover')
+    } catch (err) {
+        vscode.window.showErrorMessage(format(err))
+    }
+}
+
+async function macroExpandAll() {
+    if (clRepl === undefined) {
+        vscode.window.showInformationMessage(`REPL not connected`)
+        return
+    }
+
+    const editor = vscode.window.activeTextEditor
+
+    if (editor === undefined || !hasValidLangId(editor.document)) {
+        return
+    }
+
+    try {
+        const expr = await getInnerExpr(editor)
+        if (expr === undefined) {
+            return
+        }
+
+        const range = new vscode.Range(toVscodePos(expr.start), toVscodePos(expr.end))
+        const text = editor.document.getText(range)
+        const pkg = pkgMgr.getPackageForLine(editor.document.fileName, range.start.line)
+        const pkgName = pkg?.name ?? ':cl-user'
+        const result = await clRepl.macroExpandAll(text, pkgName)
+
+        if (result === undefined) {
+            return
+        }
+
+        hoverText = strToMarkdown(result)
+        vscode.commands.executeCommand('editor.action.showHover')
     } catch (err) {
         vscode.window.showErrorMessage(format(err))
     }
@@ -410,7 +486,7 @@ async function inlineEval() {
         return
     }
 
-    hoverText = result.replace(/\n/g, '  \n')
+    hoverText = strToMarkdown(result)
     vscode.commands.executeCommand('editor.action.showHover')
 }
 
@@ -421,22 +497,6 @@ function clearInlineResults() {
     }
 
     hoverText = ''
-}
-
-function getInlineResult(result: string, range: vscode.Range) {
-    return {
-        renderOptions: {
-            before: {
-                contentText: result,
-                backgroundColor: 'black',
-                color: '#999',
-                margin: '0 0.25rem 0 0.25rem',
-                border: '1px solid #777',
-                whiteSpace: 'pre',
-            },
-        },
-        range: new vscode.Range(range.end, range.end),
-    }
 }
 
 async function getInnerExpr(editor: vscode.TextEditor | undefined): Promise<Expr | undefined> {

@@ -116,6 +116,14 @@
                 "title": "Alive: Nth Restart"
             },
             {
+                "command": "alive.macroExpand",
+                "title": "Alive: Macro Expand"
+            },
+            {
+                "command": "alive.macroExpandAll",
+                "title": "Alive: Macro Expand All"
+            },
+            {
                 "command": "alive.loadFile",
                 "title": "Alive: Load File Into REPL"
             },
@@ -139,6 +147,14 @@
                 {
                     "command": "alive.loadFile",
                     "when": "editorLangId == lisp"
+                },
+                {
+                    "command": "alive.macroExpand",
+                    "when": "editorLangId == lisp || editorLangId == lisp-repl"
+                },
+                {
+                    "command": "alive.macroExpandAll",
+                    "when": "editorLangId == lisp || editorLangId == lisp-repl"
                 },
                 {
                     "command": "alive.sendToRepl",

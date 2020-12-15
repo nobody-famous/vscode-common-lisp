@@ -68,6 +68,22 @@ async function testFindDefs() {
     }
 }
 
+async function testMacros() {
+    const conn = new SwankConn('localhost', 4005)
+
+    try {
+        await conn.connect()
+
+        conn.trace = true
+
+        const resp = await conn.macroExpand('(cond ((= a 1) (setf a 2)))')
+
+        console.log(resp)
+    } finally {
+        conn.close()
+    }
+}
+
 async function testDebug() {
     const conn = new SwankConn('localhost', 4005)
     let debugEvent: Debug | undefined = undefined
@@ -189,7 +205,8 @@ async function testFrame() {
         // await testCompileFile()
         // await testFrame()
         // await testLoadFile()
-        await testFindDefs()
+        // await testFindDefs()
+        await testMacros()
     } catch (err) {
         console.log('FAILED', err)
     } finally {

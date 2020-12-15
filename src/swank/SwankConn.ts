@@ -22,6 +22,8 @@ import {
     loadFileReq,
     findDefsReq,
     evalAndGrabReq,
+    macroExpandReq,
+    macroExpandAllReq,
 } from './SwankRequest'
 import { SwankResponse } from './SwankResponse'
 import { ConnInfo } from './Types'
@@ -119,6 +121,14 @@ export class SwankConn extends EventEmitter {
 
     async findDefs(str: string, pkg?: string): Promise<response.FindDefs | response.Abort> {
         return await this.requestFn(findDefsReq, response.FindDefs, str, pkg)
+    }
+
+    async macroExpand(str: string, pkg?: string): Promise<response.Eval | response.Abort> {
+        return await this.requestFn(macroExpandReq, response.Eval, str, pkg)
+    }
+
+    async macroExpandAll(str: string, pkg?: string): Promise<response.Eval | response.Abort> {
+        return await this.requestFn(macroExpandAllReq, response.Eval, str, pkg)
     }
 
     async eval(str: string, pkg?: string): Promise<response.Eval | response.Abort> {
