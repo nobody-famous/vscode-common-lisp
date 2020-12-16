@@ -206,6 +206,9 @@ export class Lexer {
 
         while (!this.isWS(this.peek())) {
             const ch = this.peek()
+            if (ch === undefined) {
+                break
+            }
 
             if (ch === '(') {
                 this.curText += '('
