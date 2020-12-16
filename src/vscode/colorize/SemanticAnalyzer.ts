@@ -90,6 +90,9 @@ export class SemanticAnalyzer {
             if (resp) {
                 return
             }
+        } catch (err) {
+            cur.type = types.ERROR
+            return
         } finally {
             this.repl.setIgnoreDebug(false)
         }
@@ -106,9 +109,23 @@ export class SemanticAnalyzer {
             return
         }
 
-        if (cur.type !== types.OPEN_PARENS) {
+        if (cur.type !== types.OPEN_PARENS && cur.type !== types.SINGLE_QUOTE && cur.type !== types.BACK_QUOTE) {
             cur.type = types.COMMENT
             this.consume()
+            return
+        }
+
+        while (cur.type === types.SINGLE_QUOTE || cur.type === types.BACK_QUOTE) {
+            cur.type = types.COMMENT
+            this.consumeNoSkip()
+
+            cur = this.peek()
+            if (cur === undefined || cur.type === types.WHITE_SPACE) {
+                return
+            }
+        }
+
+        if (cur === undefined || cur.type === types.WHITE_SPACE) {
             return
         }
 
@@ -309,7 +326,7 @@ export class SemanticAnalyzer {
         this.parens.push(token)
         this.consume()
 
-        this.paramList()
+        await this.paramList()
 
         if (this.peek() === undefined) {
             return
@@ -322,7 +339,7 @@ export class SemanticAnalyzer {
         }
     }
 
-    private paramList() {
+    private async paramList() {
         let parenCount = 0
 
         while (true) {
@@ -350,7 +367,12 @@ export class SemanticAnalyzer {
                 parenCount += 1
             }
 
-            next.type = types.PARAMETER
+            if (next.type === types.POUND_SEQ) {
+                await this.pound()
+            } else {
+                next.type = types.PARAMETER
+            }
+
             next = this.consume()
         }
     }

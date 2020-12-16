@@ -36,6 +36,7 @@ typeStyles[types.MISMATCHED_CLOSE_PARENS] = 'error'
 typeStyles[types.MISMATCHED_DBL_QUOTE] = 'error'
 typeStyles[types.MISMATCHED_BAR] = 'error'
 typeStyles[types.MISMATCHED_COMMENT] = 'error'
+typeStyles[types.ERROR] = 'error'
 
 interface styleMapType {
     [index: string]: vscode.Range[]
