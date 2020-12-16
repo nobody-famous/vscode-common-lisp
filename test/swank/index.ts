@@ -76,7 +76,8 @@ async function testMacros() {
 
         conn.trace = true
 
-        const resp = await conn.disassemble('\'set-player-1', ':engine')
+        const resp = await conn.evalAndGrab('(ignore-errors #-sbcl t)')
+        // const resp = await conn.disassemble('\'set-player-1', ':engine')
 
         console.log(resp)
     } finally {

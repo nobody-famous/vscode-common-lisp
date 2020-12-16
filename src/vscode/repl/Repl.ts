@@ -76,6 +76,10 @@ export class Repl extends EventEmitter {
         this.view?.close()
     }
 
+    setIgnoreDebug(ignore: boolean) {
+        this.conn?.setIgnoreDebug(ignore)
+    }
+
     documentChanged() {
         this.view?.documentChanged()
     }
@@ -229,7 +233,7 @@ export class Repl extends EventEmitter {
 
         return undefined
     }
-    
+
     async macroExpand(text: string, pkg?: string): Promise<string | undefined> {
         if (this.conn === undefined) {
             return undefined
@@ -244,7 +248,7 @@ export class Repl extends EventEmitter {
 
         return undefined
     }
-    
+
     async macroExpandAll(text: string, pkg?: string): Promise<string | undefined> {
         if (this.conn === undefined) {
             return undefined

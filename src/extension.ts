@@ -373,7 +373,7 @@ function semTokensProvider(): vscode.DocumentSemanticTokensProvider {
             doc: vscode.TextDocument,
             token: vscode.CancellationToken
         ): Promise<vscode.SemanticTokens> {
-            const colorizer = new Colorizer()
+            const colorizer = new Colorizer(clRepl)
             const tokens = getLexTokens(doc.fileName)
             const emptyTokens = new vscode.SemanticTokens(new Uint32Array(0))
 
@@ -386,7 +386,7 @@ function semTokensProvider(): vscode.DocumentSemanticTokensProvider {
 
                 await updatePkgMgr(doc, exprs)
 
-                return colorizer.run(tokens)
+                return await colorizer.run(tokens)
             } catch (err) {
                 vscode.window.showErrorMessage(format(err))
             }
