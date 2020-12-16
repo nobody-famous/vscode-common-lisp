@@ -1,7 +1,7 @@
 import { types } from '../../lisp'
 import { ExprFormatter } from './ExprFormatter'
 import { SExpr } from './SExpr'
-import { State } from './Utils'
+import { countNewLines, setTarget, State } from './Utils'
 
 export class Expr extends ExprFormatter {
     constructor(state: State) {
@@ -28,17 +28,8 @@ export class Expr extends ExprFormatter {
     }
 
     formatPoundSeq() {
-        // TODO: Need an ExprFormatter to handle setting the space between
-        //       the pound sequence and the next thing
-
-        let curToken = this.peekToken()
-        const text = curToken?.token.text
-
-        this.consumeToken()
-
-        if (!text?.startsWith('#+') && !text?.startsWith('#-')) {
-            return
-        }
+        const expr = new PoundExpr(this.state)
+        this.doFormat(expr)
     }
 
     formatQuote() {
@@ -84,14 +75,53 @@ export class Expr extends ExprFormatter {
     formatSExpr() {
         const sexpr = new SExpr(this.state)
 
-        sexpr.format()
+        this.doFormat(sexpr)
+    }
 
-        if (sexpr.isMultiline) {
+    doFormat(expr: ExprFormatter) {
+        expr.format()
+
+        if (expr.isMultiline) {
             this.isMultiline = true
         }
 
-        if (sexpr.isOrigML) {
+        if (expr.isOrigML) {
             this.isOrigML = true
         }
+    }
+}
+
+class PoundExpr extends ExprFormatter {
+    constructor(state: State) {
+        super(state)
+    }
+
+    format() {
+        let curToken = this.peekToken()
+
+        if (curToken === undefined) {
+            return
+        }
+
+        const text = curToken.token.text
+
+        this.consumeToken()
+
+        if (!text.startsWith('#+') && !text.startsWith('#-')) {
+            return
+        }
+
+        curToken = this.peekToken()
+        if (curToken === undefined) {
+            return
+        }
+
+        if (countNewLines(curToken.before.existing) > 0) {
+            this.addLineIndent(curToken)
+        } else {
+            setTarget(this.state, curToken, ' ')
+        }
+
+        this.consumeExpr()
     }
 }
