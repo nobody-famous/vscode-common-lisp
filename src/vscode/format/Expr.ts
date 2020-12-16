@@ -1,7 +1,7 @@
 import { types } from '../../lisp'
 import { ExprFormatter } from './ExprFormatter'
 import { SExpr } from './SExpr'
-import { isExprEnd, State, withIncIndent } from './Utils'
+import { State } from './Utils'
 
 export class Expr extends ExprFormatter {
     constructor(state: State) {
@@ -20,8 +20,24 @@ export class Expr extends ExprFormatter {
             case types.BACK_QUOTE:
             case types.SINGLE_QUOTE:
                 return this.formatQuote()
+            case types.POUND_SEQ:
+                return this.formatPoundSeq()
             default:
                 this.consumeToken()
+        }
+    }
+
+    formatPoundSeq() {
+        // TODO: Need an ExprFormatter to handle setting the space between
+        //       the pound sequence and the next thing
+
+        let curToken = this.peekToken()
+        const text = curToken?.token.text
+
+        this.consumeToken()
+
+        if (!text?.startsWith('#+') && !text?.startsWith('#-')) {
+            return
         }
     }
 
