@@ -1,4 +1,4 @@
-import { format } from 'util'
+import { format, TextEncoder } from 'util'
 import * as vscode from 'vscode'
 import { Expr, exprToString, findAtom, findExpr, findInnerExpr, getLexTokens, Lexer, Parser, readLexTokens, SExpr } from './lisp'
 import { Colorizer, tokenModifiersLegend, tokenTypesLegend } from './vscode/colorize'
@@ -9,7 +9,16 @@ import * as fmt from './vscode/format/Formatter'
 import { PackageMgr } from './vscode/PackageMgr'
 import * as repl from './vscode/repl'
 import { getHelp } from './vscode/SigHelp'
-import { COMMON_LISP_ID, getDocumentExprs, REPL_ID, toVscodePos } from './vscode/Utils'
+import {
+    COMMON_LISP_ID,
+    createFolder,
+    getDocumentExprs,
+    getTempFolder,
+    jumpToTop,
+    openFile,
+    REPL_ID,
+    toVscodePos,
+} from './vscode/Utils'
 
 const pkgMgr = new PackageMgr()
 const completionProvider = new CompletionProvider(pkgMgr)
@@ -171,11 +180,34 @@ async function disassemble() {
             return
         }
 
-        hoverText = strToMarkdown(result)
-        vscode.commands.executeCommand('editor.action.showHover')
+        const file = await writeDisassemble(result)
+
+        if (file !== undefined) {
+            const editor = await vscode.window.showTextDocument(file, vscode.ViewColumn.Two, true)
+            jumpToTop(editor)
+        }
     } catch (err) {
         vscode.window.showErrorMessage(format(err))
     }
+}
+
+async function writeDisassemble(text: string) {
+    const folder = await getTempFolder()
+
+    if (folder === undefined) {
+        vscode.window.showErrorMessage('No folder for disassemble output')
+        return
+    }
+
+    await createFolder(folder)
+
+    const filePath = vscode.Uri.joinPath(folder, 'disassemble.lisp')
+    const file = await openFile(filePath)
+    const content = new TextEncoder().encode(text)
+
+    await vscode.workspace.fs.writeFile(file.uri, content)
+
+    return file
 }
 
 async function macroExpand() {
