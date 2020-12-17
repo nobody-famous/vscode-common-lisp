@@ -132,8 +132,8 @@
                 "title": "Alive: Load File Into REPL"
             },
             {
-                "command": "alive.createSystem",
-                "title": "Alive: Create System"
+                "command": "alive.systemSkeleton",
+                "title": "Alive: System Skeleton"
             }
         ],
         "menus": {
@@ -185,7 +185,7 @@
                     "when": "editorLangId == lisp || editorLangId == lisp-repl || clDebugViewActive"
                 },
                 {
-                    "command": "alive.createSystem"
+                    "command": "alive.systemSkeleton"
                 }
             ]
         },

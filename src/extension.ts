@@ -3,7 +3,7 @@ import * as vscode from 'vscode'
 import { Expr, exprToString, findAtom, findExpr, findInnerExpr, getLexTokens, Lexer, Parser, readLexTokens, SExpr } from './lisp'
 import { Colorizer, tokenModifiersLegend, tokenTypesLegend } from './vscode/colorize'
 import { CompletionProvider } from './vscode/CompletionProvider'
-import * as CreateSystem from './vscode/CreateSystem'
+import * as Skeleton from './vscode/SystemSkeleton'
 import { DefinitionProvider } from './vscode/DefinitionProvider'
 import * as fmt from './vscode/format/Formatter'
 import { PackageMgr } from './vscode/PackageMgr'
@@ -87,7 +87,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.macroExpandAll', macroExpandAll))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.disassemble', disassemble))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.loadFile', replLoadFile))
-    ctx.subscriptions.push(vscode.commands.registerCommand('alive.createSystem', createSystem))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.systemSkeleton', systemSkeleton))
 
     if (activeEditor === undefined || !hasValidLangId(activeEditor.document)) {
         return
@@ -125,7 +125,7 @@ async function pickFolder(folders: readonly vscode.WorkspaceFolder[]): Promise<v
     return nameMap[pick]
 }
 
-async function createSystem() {
+async function systemSkeleton() {
     const folders = vscode.workspace.workspaceFolders
 
     if (folders === undefined) {
@@ -139,7 +139,7 @@ async function createSystem() {
     }
 
     try {
-        await CreateSystem.create(folder)
+        await Skeleton.create(folder)
     } catch (err) {
         vscode.window.showErrorMessage(format(err))
     }
