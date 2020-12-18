@@ -88,6 +88,20 @@ async function testMacros() {
     }
 }
 
+async function testInspector() {
+    const conn = new SwankConn('localhost', 4005)
+
+    try {
+        await conn.connect()
+        await conn.connectionInfo()
+
+        conn.trace = true
+        await conn.inspector('t')
+    } finally {
+        conn.close()
+    }
+}
+
 async function testDebug() {
     const conn = new SwankConn('localhost', 4005)
     let debugEvent: Debug | undefined = undefined
@@ -210,7 +224,8 @@ async function testFrame() {
         // await testFrame()
         // await testLoadFile()
         // await testFindDefs()
-        await testMacros()
+        // await testMacros()
+        await testInspector()
     } catch (err) {
         console.log('FAILED', err)
     } finally {

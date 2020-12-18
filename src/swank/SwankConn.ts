@@ -25,6 +25,7 @@ import {
     macroExpandReq,
     macroExpandAllReq,
     disassembleReq,
+    inspectorReq,
 } from './SwankRequest'
 import { SwankResponse } from './SwankResponse'
 import { ConnInfo } from './Types'
@@ -141,6 +142,10 @@ export class SwankConn extends EventEmitter {
 
     async disassemble(str: string, pkg?: string): Promise<response.Eval | response.Abort> {
         return await this.requestFn(disassembleReq, response.Eval, str, pkg)
+    }
+
+    async inspector(str: string, pkg?: string): Promise<response.InitInspect | response.Abort> {
+        return await this.requestFn(inspectorReq, response.InitInspect, str, pkg)
     }
 
     async eval(str: string, pkg?: string): Promise<response.Eval | response.Abort> {
