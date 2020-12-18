@@ -96,7 +96,8 @@ async function testInspector() {
         await conn.connectionInfo()
 
         conn.trace = true
-        await conn.inspector('t')
+        const info = await conn.inspector('t')
+        console.log('info', info)
     } finally {
         conn.close()
     }

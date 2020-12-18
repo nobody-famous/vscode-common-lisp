@@ -12,7 +12,23 @@ interface Content {
     display: Array<ContentAction | string>
 }
 
+interface InspectInfo {
+    title: string
+    id: number
+    content: Content
+}
+
 export class InitInspect {
+    title: string
+    id: number
+    content: Content
+
+    constructor(info: InspectInfo) {
+        this.title = info.title
+        this.id = info.id
+        this.content = info.content
+    }
+
     static parse(event: Return): InitInspect | undefined {
         if (event.info.status !== ':OK') {
             return undefined
@@ -24,46 +40,45 @@ export class InitInspect {
             return undefined
         }
 
-        const obj = this.parsePayload(payload.parts)
+        const info = this.parsePayload(payload.parts)
 
-        return undefined
+        return info !== undefined ? new InitInspect(info) : undefined
     }
 
-    static parsePayload(payload: Expr[]) {
+    static parsePayload(payload: Expr[]): InspectInfo | undefined {
+        let title: string | undefined = undefined
+        let id: number | undefined = undefined
+        let content: Content | undefined = undefined
+
         for (let ndx = 0; ndx < payload.length; ndx += 2) {
             const key = payload[ndx]
             const value = payload[ndx + 1]
 
             if (key === undefined || value === undefined) {
-                break
+                return undefined
             }
 
             const name = exprToString(key)?.toUpperCase()
 
             if (name === ':TITLE') {
-                const title = exprToString(value)
-
-                if (title !== undefined) {
-                    console.log('title', title)
-                }
+                title = exprToString(value)
             } else if (name === ':ID') {
-                const id = exprToNumber(value)
-
-                if (id !== undefined) {
-                    console.log('id', id)
-                }
+                id = exprToNumber(value)
             } else if (name === ':CONTENT') {
                 if (value instanceof SExpr) {
-                    this.parseContent(value.parts)
+                    content = this.parseContent(value.parts)
                 }
-            } else {
-                console.log('key', name)
-                console.log('value', value)
             }
         }
+
+        if (title === undefined || id === undefined || content === undefined) {
+            return undefined
+        }
+
+        return { title, id, content }
     }
 
-    static parseContent(exprs: Expr[]) {
+    static parseContent(exprs: Expr[]): Content | undefined {
         if (exprs.length !== 4) {
             return
         }
@@ -73,7 +88,11 @@ export class InitInspect {
         const num2 = exprToNumber(exprs[2])
         const num3 = exprToNumber(exprs[3])
 
-        console.log('nums', num1, num2, num3)
+        if (display === undefined || num1 === undefined || num2 === undefined || num3 === undefined) {
+            return
+        }
+
+        return { display }
     }
 
     static parseDisplay(expr: Expr): Array<string | ContentAction> | undefined {
@@ -81,30 +100,66 @@ export class InitInspect {
             return
         }
 
-        let display = ''
-        const result: Array<string | ContentAction> = []
-        let actions: string[] = []
+        const display = new Display()
 
-        for (const part of expr.parts) {
-            const str = exprToString(part)
+        return display.parse(expr.parts)
+    }
+}
+
+class Display {
+    text: string = ''
+    actions: ContentAction[] = []
+    result: Array<string | ContentAction> = []
+
+    parse(exprs: Expr[]) {
+        for (const expr of exprs) {
+            const str = exprToString(expr)
 
             if (str !== undefined) {
-                const converted = convert(str)
-
-                if (converted === '\n') {
-                    result.push(display)
-                    result.push(...actions)
-
-                    display = ''
-                    actions = []
-                } else {
-                    display += convert(str)
-                }
+                this.parseString(str)
             } else {
-                actions.push('ACTION')
+                this.parseAction(expr)
             }
         }
 
-        console.log(result)
+        return this.result
+    }
+
+    private parseAction(expr: Expr) {
+        if (!(expr instanceof SExpr) || expr.parts.length !== 3) {
+            return
+        }
+
+        const actStr = exprToString(expr.parts[0])
+        const textStr = exprToString(expr.parts[1])
+        const ndx = exprToNumber(expr.parts[2])
+
+        if (actStr === undefined || textStr === undefined || ndx === undefined) {
+            return
+        }
+
+        const act = convert(actStr)
+        const text = convert(textStr)
+
+        if (typeof act !== 'string' || typeof text !== 'string') {
+            return
+        }
+
+        this.actions.push({ action: act, display: text, index: ndx })
+    }
+
+    private parseString(str: string) {
+        const cvt = convert(str)
+
+        if (cvt !== '\n') {
+            this.text += cvt
+            return
+        }
+
+        this.result.push(this.text)
+        this.result.push(...this.actions)
+
+        this.text = ''
+        this.actions = []
     }
 }
