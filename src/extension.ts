@@ -3,12 +3,12 @@ import * as vscode from 'vscode'
 import { Expr, exprToString, findAtom, findExpr, findInnerExpr, getLexTokens, Lexer, Parser, readLexTokens, SExpr } from './lisp'
 import { Colorizer, tokenModifiersLegend, tokenTypesLegend } from './vscode/colorize'
 import { CompletionProvider } from './vscode/CompletionProvider'
-import * as Skeleton from './vscode/SystemSkeleton'
 import { DefinitionProvider } from './vscode/DefinitionProvider'
 import * as fmt from './vscode/format/Formatter'
 import { PackageMgr } from './vscode/PackageMgr'
 import * as repl from './vscode/repl'
 import { getHelp } from './vscode/SigHelp'
+import * as Skeleton from './vscode/SystemSkeleton'
 import {
     COMMON_LISP_ID,
     createFolder,
@@ -23,6 +23,9 @@ import {
 const pkgMgr = new PackageMgr()
 const completionProvider = new CompletionProvider(pkgMgr)
 const legend = new vscode.SemanticTokensLegend(tokenTypesLegend, tokenModifiersLegend)
+const parenDec = vscode.window.createTextEditorDecorationType({
+    color: new vscode.ThemeColor('foreground'),
+})
 
 let clRepl: repl.Repl | undefined = undefined
 let clReplHistory: repl.History = new repl.History()
@@ -88,6 +91,10 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.disassemble', disassemble))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.loadFile', replLoadFile))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.systemSkeleton', systemSkeleton))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.down', downArrow))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.up', upArrow))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.right', rightArrow))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.left', leftArrow))
 
     if (activeEditor === undefined || !hasValidLangId(activeEditor.document)) {
         return
@@ -107,6 +114,43 @@ function visibleEditorsChanged(editors: vscode.TextEditor[]) {
             readLexTokens(editor.document.fileName, editor.document.getText())
         }
     }
+}
+
+async function downArrow() {
+    await arrowCommand('cursorDown')
+}
+
+async function upArrow() {
+    await arrowCommand('cursorUp')
+}
+
+async function leftArrow() {
+    await arrowCommand('cursorLeft')
+}
+
+async function rightArrow() {
+    await arrowCommand('cursorRight')
+}
+
+async function arrowCommand(cmd: string) {
+    await vscode.commands.executeCommand(cmd)
+
+    const editor = vscode.window.activeTextEditor
+
+    if (editor === undefined) {
+        return
+    }
+
+    const expr = await getInnerExpr(editor)
+
+    if (expr === undefined || !(expr instanceof SExpr)) {
+        return
+    }
+
+    const open = new vscode.Range(toVscodePos(expr.start), new vscode.Position(expr.start.line, expr.start.character + 1))
+    const close = new vscode.Range(new vscode.Position(expr.end.line, expr.end.character - 1), toVscodePos(expr.end))
+
+    editor.setDecorations(parenDec, [open, close])
 }
 
 async function pickFolder(folders: readonly vscode.WorkspaceFolder[]): Promise<vscode.WorkspaceFolder | undefined> {

@@ -191,6 +191,26 @@
         },
         "keybindings": [
             {
+                "command": "alive.down",
+                "when": "editorTextFocus && editorLangId == lisp",
+                "key": "down"
+            },
+            {
+                "command": "alive.up",
+                "when": "editorTextFocus && editorLangId == lisp",
+                "key": "up"
+            },
+            {
+                "command": "alive.right",
+                "when": "editorTextFocus && editorLangId == lisp",
+                "key": "right"
+            },
+            {
+                "command": "alive.left",
+                "when": "editorTextFocus && editorLangId == lisp",
+                "key": "left"
+            },
+            {
                 "command": "alive.loadFile",
                 "when": "editorLangId == lisp",
                 "key": "alt+shift+l"
