@@ -189,8 +189,7 @@
                     "when": "editorLangId == lisp || editorLangId == lisp-repl || clDebugViewActive"
                 },
                 {
-                    "command": "alive.inspect",
-                    "when": "editorLangId == lisp || editorLangId == lisp-repl"
+                    "command": "alive.inspect"
                 },
                 {
                     "command": "alive.systemSkeleton"

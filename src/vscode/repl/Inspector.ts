@@ -1,8 +1,9 @@
 import { EventEmitter } from 'events'
-import { type } from 'os'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { InspectContent } from '../../swank/Types'
+import { unescape } from '../../lisp'
+import { convert } from '../../swank/SwankUtils'
+import { InspectContent, InspectContentAction } from '../../swank/Types'
 
 export class Inspector extends EventEmitter {
     ctx: vscode.ExtensionContext
@@ -36,19 +37,35 @@ export class Inspector extends EventEmitter {
         this.panel = undefined
     }
 
-    renderContent() {
+    private renderContent() {
+        const display = this.content.display
         let str = ''
+        let opened = false
 
-        for (const item of this.content.display) {
+        for (const item of display) {
             if (typeof item === 'string') {
-                str += `<div>${item}</div>`
+                if (opened) {
+                    str += '</div>'
+                    opened = false
+                }
+
+                opened = true
+
+                str += `<div class="inspect-item">`
+                str += item
+            } else if ('display' in item) {
+                str += this.escapeHtml(unescape(item.display))
             }
         }
 
         return str
     }
 
-    renderHtml() {
+    private escapeHtml(text: string) {
+        return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&#39;')
+    }
+
+    private renderHtml() {
         if (this.panel === undefined) {
             vscode.window.showInformationMessage('Panel not undefined')
             return
@@ -64,7 +81,7 @@ export class Inspector extends EventEmitter {
             </head>
             <body>
                 <div id="content">
-                    <div class="inspect-title">${this.title}</div>
+                    <div class="inspect-title">${this.escapeHtml(this.title)}</div>
                     <hr></hr>
                     <div class="inspect-content">${this.renderContent()}</div>
                 </div>
