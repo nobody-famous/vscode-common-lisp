@@ -1,6 +1,17 @@
 import { format, TextEncoder } from 'util'
 import * as vscode from 'vscode'
-import { Expr, exprToString, findAtom, findExpr, findInnerExpr, getLexTokens, Lexer, Parser, readLexTokens, SExpr } from './lisp'
+import {
+    Expr,
+    exprToString,
+    findAtom,
+    findExpr,
+    findInnerExpr,
+    getLexTokens,
+    Lexer,
+    Parser,
+    readLexTokens,
+    SExpr
+} from './lisp'
 import { Colorizer, tokenModifiersLegend, tokenTypesLegend } from './vscode/colorize'
 import { CompletionProvider } from './vscode/CompletionProvider'
 import { DefinitionProvider } from './vscode/DefinitionProvider'
@@ -17,15 +28,12 @@ import {
     jumpToTop,
     openFile,
     REPL_ID,
-    toVscodePos,
+    toVscodePos
 } from './vscode/Utils'
 
 const pkgMgr = new PackageMgr()
 const completionProvider = new CompletionProvider(pkgMgr)
 const legend = new vscode.SemanticTokensLegend(tokenTypesLegend, tokenModifiersLegend)
-const parenDec = vscode.window.createTextEditorDecorationType({
-    color: new vscode.ThemeColor('foreground'),
-})
 
 let clRepl: repl.Repl | undefined = undefined
 let clReplHistory: repl.History = new repl.History()
@@ -90,11 +98,8 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.macroExpandAll', macroExpandAll))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.disassemble', disassemble))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.loadFile', replLoadFile))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.inspect', inspect))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.systemSkeleton', systemSkeleton))
-    ctx.subscriptions.push(vscode.commands.registerCommand('alive.down', downArrow))
-    ctx.subscriptions.push(vscode.commands.registerCommand('alive.up', upArrow))
-    ctx.subscriptions.push(vscode.commands.registerCommand('alive.right', rightArrow))
-    ctx.subscriptions.push(vscode.commands.registerCommand('alive.left', leftArrow))
 
     if (activeEditor === undefined || !hasValidLangId(activeEditor.document)) {
         return
@@ -116,41 +121,36 @@ function visibleEditorsChanged(editors: vscode.TextEditor[]) {
     }
 }
 
-async function downArrow() {
-    await arrowCommand('cursorDown')
-}
-
-async function upArrow() {
-    await arrowCommand('cursorUp')
-}
-
-async function leftArrow() {
-    await arrowCommand('cursorLeft')
-}
-
-async function rightArrow() {
-    await arrowCommand('cursorRight')
-}
-
-async function arrowCommand(cmd: string) {
-    await vscode.commands.executeCommand(cmd)
-
+async function inspect() {
     const editor = vscode.window.activeTextEditor
-
-    if (editor === undefined) {
+    if (editor === undefined || !hasValidLangId(editor?.document)) {
         return
     }
 
-    const expr = await getInnerExpr(editor)
-
-    if (expr === undefined || !(expr instanceof SExpr)) {
+    if (clRepl === undefined) {
+        vscode.window.showErrorMessage('REPL not connected')
         return
     }
 
-    const open = new vscode.Range(toVscodePos(expr.start), new vscode.Position(expr.start.line, expr.start.character + 1))
-    const close = new vscode.Range(new vscode.Position(expr.end.line, expr.end.character - 1), toVscodePos(expr.end))
+    const pos = editor.selection.start
+    const exprs = getDocumentExprs(editor.document)
+    const atom = findAtom(exprs, pos)
+    let text = ''
 
-    editor.setDecorations(parenDec, [open, close])
+    if (atom !== undefined) {
+        const str = exprToString(atom)
+
+        text = typeof str === 'string' ? str : ''
+    }
+
+    const input = await vscode.window.showInputBox({ placeHolder: 'Enter form', value: text })
+
+    text = input !== undefined ? input : ''
+
+    const pkg = pkgMgr.getPackageForLine(editor.document.fileName, pos.line)
+    const pkgName = pkg?.name ?? ':cl-user'
+
+    await clRepl.inspect(text, pkgName)
 }
 
 async function pickFolder(folders: readonly vscode.WorkspaceFolder[]): Promise<vscode.WorkspaceFolder | undefined> {

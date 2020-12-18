@@ -11,6 +11,7 @@ import { ConnInfo, Restart } from '../../swank/Types'
 import { isReplDoc } from '../Utils'
 import { DebugView } from './DebugView'
 import { FileView } from './FileView'
+import { Inspector } from './Inspector'
 import { View } from './View'
 
 export class Repl extends EventEmitter {
@@ -82,6 +83,20 @@ export class Repl extends EventEmitter {
 
     documentChanged() {
         this.view?.documentChanged()
+    }
+
+    async inspect(text: string, pkg: string) {
+        if (this.conn === undefined) {
+            return
+        }
+
+        const resp = await this.conn.inspector(text, pkg)
+
+        if (resp instanceof response.InitInspect) {
+            const insp = new Inspector(this.ctx, resp.title, resp.content, vscode.ViewColumn.Two)
+
+            insp.run()
+        }
     }
 
     async findDefs(label: string, pkg: string) {

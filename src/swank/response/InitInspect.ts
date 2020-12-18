@@ -1,27 +1,12 @@
 import { Expr, exprToNumber, exprToString, SExpr } from '../../lisp'
 import { Return } from '../event'
 import { convert } from '../SwankUtils'
-
-interface ContentAction {
-    action: string
-    display: string
-    index: number
-}
-
-interface Content {
-    display: Array<ContentAction | string>
-}
-
-interface InspectInfo {
-    title: string
-    id: number
-    content: Content
-}
+import { InspectContent, InspectContentAction, InspectInfo } from '../Types'
 
 export class InitInspect {
     title: string
     id: number
-    content: Content
+    content: InspectContent
 
     constructor(info: InspectInfo) {
         this.title = info.title
@@ -48,7 +33,7 @@ export class InitInspect {
     static parsePayload(payload: Expr[]): InspectInfo | undefined {
         let title: string | undefined = undefined
         let id: number | undefined = undefined
-        let content: Content | undefined = undefined
+        let content: InspectContent | undefined = undefined
 
         for (let ndx = 0; ndx < payload.length; ndx += 2) {
             const key = payload[ndx]
@@ -78,7 +63,7 @@ export class InitInspect {
         return { title, id, content }
     }
 
-    static parseContent(exprs: Expr[]): Content | undefined {
+    static parseContent(exprs: Expr[]): InspectContent | undefined {
         if (exprs.length !== 4) {
             return
         }
@@ -95,7 +80,7 @@ export class InitInspect {
         return { display }
     }
 
-    static parseDisplay(expr: Expr): Array<string | ContentAction> | undefined {
+    static parseDisplay(expr: Expr): Array<string | InspectContentAction> | undefined {
         if (!(expr instanceof SExpr)) {
             return
         }
@@ -108,8 +93,8 @@ export class InitInspect {
 
 class Display {
     text: string = ''
-    actions: ContentAction[] = []
-    result: Array<string | ContentAction> = []
+    actions: InspectContentAction[] = []
+    result: Array<string | InspectContentAction> = []
 
     parse(exprs: Expr[]) {
         for (const expr of exprs) {

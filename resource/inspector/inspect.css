@@ -1,0 +1,8 @@
+#content {
+    font: 'Consolas', 'Courier New', 'monospace';
+}
+
+.inspect-title {
+    font-weight: bold;
+    padding-top: 0.5rem;
+}

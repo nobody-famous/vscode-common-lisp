@@ -132,6 +132,10 @@
                 "title": "Alive: Load File Into REPL"
             },
             {
+                "command": "alive.inspect",
+                "title": "Alive: Inspector"
+            },
+            {
                 "command": "alive.systemSkeleton",
                 "title": "Alive: System Skeleton"
             }
@@ -185,31 +189,15 @@
                     "when": "editorLangId == lisp || editorLangId == lisp-repl || clDebugViewActive"
                 },
                 {
+                    "command": "alive.inspect",
+                    "when": "editorLangId == lisp || editorLangId == lisp-repl"
+                },
+                {
                     "command": "alive.systemSkeleton"
                 }
             ]
         },
         "keybindings": [
-            {
-                "command": "alive.down",
-                "when": "editorTextFocus && editorLangId == lisp",
-                "key": "down"
-            },
-            {
-                "command": "alive.up",
-                "when": "editorTextFocus && editorLangId == lisp",
-                "key": "up"
-            },
-            {
-                "command": "alive.right",
-                "when": "editorTextFocus && editorLangId == lisp",
-                "key": "right"
-            },
-            {
-                "command": "alive.left",
-                "when": "editorTextFocus && editorLangId == lisp",
-                "key": "left"
-            },
             {
                 "command": "alive.loadFile",
                 "when": "editorLangId == lisp",
