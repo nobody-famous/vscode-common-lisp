@@ -132,16 +132,9 @@ async function inspector() {
 
     if (editor !== undefined) {
         const pos = editor.selection.start
-        const exprs = getDocumentExprs(editor.document)
-        const atom = findAtom(exprs, pos)
-
-        if (atom !== undefined) {
-            const str = exprToString(atom)
-
-            text = typeof str === 'string' ? str : ''
-        }
-
         const pkg = pkgMgr.getPackageForLine(editor.document.fileName, pos.line)
+
+        text = getInspectText(editor, pos)
 
         if (pkg !== undefined) {
             pkgName = pkg.name
@@ -153,6 +146,23 @@ async function inspector() {
     text = input !== undefined ? input : ''
 
     await clRepl.inspector(text, pkgName)
+}
+
+function getInspectText(editor: vscode.TextEditor, pos: vscode.Position) {
+    if (!editor.selection.isEmpty) {
+        return editor.document.getText(new vscode.Range(editor.selection.start, editor.selection.end))
+    }
+
+    const exprs = getDocumentExprs(editor.document)
+    const atom = findAtom(exprs, pos)
+
+    if (atom !== undefined) {
+        const str = exprToString(atom)
+
+        return typeof str === 'string' ? str : ''
+    }
+
+    return ''
 }
 
 async function pickFolder(folders: readonly vscode.WorkspaceFolder[]): Promise<vscode.WorkspaceFolder | undefined> {
