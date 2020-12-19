@@ -42,6 +42,8 @@ export class Inspector extends EventEmitter {
             switch (msg.command.toUpperCase()) {
                 case 'VALUE':
                     return this.emit('inspect-part', msg.index)
+                case 'ACTION':
+                    return this.emit('inspector-action', msg.index)
             }
         })
 

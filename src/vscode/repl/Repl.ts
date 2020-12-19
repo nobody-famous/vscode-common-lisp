@@ -102,7 +102,6 @@ export class Repl extends EventEmitter {
             return
         }
 
-        this.conn.trace = true
         const resp = await this.conn.inspectorPop()
 
         if (resp instanceof response.InitInspect) {
@@ -361,6 +360,14 @@ export class Repl extends EventEmitter {
 
         insp.on('inspect-part', async (ndx) => {
             const resp = await this.conn?.inspectNthPart(ndx)
+
+            if (resp instanceof response.InitInspect) {
+                insp.show(resp.title, resp.content)
+            }
+        })
+
+        insp.on('inspector-action', async (ndx) => {
+            const resp = await this.conn?.inspectorNthAction(ndx)
 
             if (resp instanceof response.InitInspect) {
                 insp.show(resp.title, resp.content)

@@ -136,7 +136,9 @@ async function inspector() {
 
         text = getInspectText(editor, pos)
 
-        if (pkg !== undefined) {
+        if (editor.document.languageId === REPL_ID) {
+            pkgName = clRepl.curPackage
+        } else if (pkg !== undefined) {
             pkgName = pkg.name
         }
     }
