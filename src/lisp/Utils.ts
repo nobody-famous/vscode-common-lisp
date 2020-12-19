@@ -1,6 +1,6 @@
 import { convert } from '../swank/SwankUtils'
 import { StringMap } from '../swank/Types'
-import { Atom, Expr, SExpr } from './Expr'
+import { Atom, Defun, Expr, Let, SExpr } from './Expr'
 import { Lexer } from './Lexer'
 import { Token } from './Token'
 import { Position } from './Types'
@@ -206,6 +206,30 @@ export function unescape(str: string): string {
     return str.replace(/\\./g, (item) => (item.length > 0 ? item.charAt(1) : item))
 }
 
+export function getLocals(expr: Expr, pos: Position): string[] {
+    if (!(expr instanceof SExpr) || !posInExpr(expr, pos)) {
+        return []
+    }
+
+    let locals: string[] = []
+    const name = expr.getName()?.toUpperCase()
+
+    if (name === 'DEFUN') {
+        const defun = Defun.from(expr)
+        if (defun !== undefined) {
+            locals = locals.concat(defun.args)
+            defun.body.forEach((expr) => (locals = locals.concat(getLocals(expr, pos))))
+        }
+    } else if (isLetName(name)) {
+        const letExpr = Let.from(expr)
+        if (letExpr !== undefined) {
+            locals = locals.concat(Object.keys(letExpr.vars))
+            letExpr.body.forEach((expr) => (locals = locals.concat(getLocals(expr, pos))))
+        }
+    }
+
+    return locals
+}
 function posAfterStart(start: Position, pos: Position): boolean {
     if (pos.line < start.line) {
         return false
