@@ -27,7 +27,9 @@ import {
     disassembleReq,
     inspectorReq,
     inspectNthPartReq,
-    inspectorPopReq,
+    inspectorPrevReq,
+    inspectorNextReq,
+    inspectorQuitReq,
     inspectNthActionReq,
 } from './SwankRequest'
 import { SwankResponse } from './SwankResponse'
@@ -159,8 +161,16 @@ export class SwankConn extends EventEmitter {
         return await this.requestFn(inspectNthActionReq, response.InitInspect, index, pkg)
     }
     
-    async inspectorPop(): Promise<response.InitInspect | response.Abort> {
-        return await this.requestFn(inspectorPopReq, response.InitInspect)
+    async inspectorPrev(): Promise<response.InitInspect | response.Abort> {
+        return await this.requestFn(inspectorPrevReq, response.InitInspect)
+    }
+    
+    async inspectorNext(): Promise<response.InitInspect | response.Abort> {
+        return await this.requestFn(inspectorNextReq, response.InitInspect)
+    }
+    
+    async inspectorQuit(): Promise<response.InitInspect | response.Abort> {
+        return await this.requestFn(inspectorQuitReq, response.InitInspect)
     }
 
     async eval(str: string, pkg?: string): Promise<response.Eval | response.Abort> {

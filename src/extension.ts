@@ -88,7 +88,9 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.disassemble', disassemble))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.loadFile', replLoadFile))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.inspector', inspector))
-    ctx.subscriptions.push(vscode.commands.registerCommand('alive.inspector-pop', inspectorPop))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.inspector-prev', inspectorPrev))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.inspector-next', inspectorNext))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.inspector-quit', inspectorQuit))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.systemSkeleton', systemSkeleton))
 
     if (activeEditor === undefined || !hasValidLangId(activeEditor.document)) {
@@ -111,13 +113,31 @@ function visibleEditorsChanged(editors: vscode.TextEditor[]) {
     }
 }
 
-async function inspectorPop() {
+async function inspectorPrev() {
     if (clRepl === undefined) {
         vscode.window.showErrorMessage('REPL not connected')
         return
     }
 
-    await clRepl.inspectorPop()
+    await clRepl.inspectorPrev()
+}
+
+async function inspectorNext() {
+    if (clRepl === undefined) {
+        vscode.window.showErrorMessage('REPL not connected')
+        return
+    }
+
+    await clRepl.inspectorNext()
+}
+
+async function inspectorQuit() {
+    if (clRepl === undefined) {
+        vscode.window.showErrorMessage('REPL not connected')
+        return
+    }
+
+    await clRepl.inspectorQuit()
 }
 
 async function inspector() {

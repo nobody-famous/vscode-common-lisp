@@ -85,8 +85,18 @@ export function inspectNthActionReq(msgID: number, index: number, pkg?: string) 
     return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
 }
 
-export function inspectorPopReq(msgID: number) {
+export function inspectorPrevReq(msgID: number) {
     const data = [new LispID('swank:inspector-pop')]
+    return emacsRex(msgID, toWire(data), new LispID('nil'), true)
+}
+
+export function inspectorNextReq(msgID: number) {
+    const data = [new LispID('swank:inspector-next')]
+    return emacsRex(msgID, toWire(data), new LispID('nil'), true)
+}
+
+export function inspectorQuitReq(msgID: number) {
+    const data = [new LispID('swank:quit-inspector')]
     return emacsRex(msgID, toWire(data), new LispID('nil'), true)
 }
 

@@ -17,6 +17,7 @@ import { View } from './View'
 export class Repl extends EventEmitter {
     conn?: SwankConn
     view?: View
+    inspectorView?: Inspector
     dbgViews: { [index: number]: DebugView } = {}
     curPackage: string = ':cl-user'
     ctx: vscode.ExtensionContext
@@ -97,16 +98,39 @@ export class Repl extends EventEmitter {
         }
     }
 
-    async inspectorPop() {
+    async inspectorPrev() {
         if (this.conn === undefined) {
             return
         }
 
-        const resp = await this.conn.inspectorPop()
+        const resp = await this.conn.inspectorPrev()
 
         if (resp instanceof response.InitInspect) {
             this.showInspector(resp)
         }
+    }
+    
+    async inspectorNext() {
+        if (this.conn === undefined) {
+            return
+        }
+
+        const resp = await this.conn.inspectorNext()
+
+        if (resp instanceof response.InitInspect) {
+            this.showInspector(resp)
+        }
+    }
+
+    async inspectorQuit() {
+        if (this.conn === undefined) {
+            return
+        }
+
+        await this.conn.inspectorQuit()
+
+        this.inspectorView?.stop()
+        this.inspectorView = undefined
     }
 
     async findDefs(label: string, pkg: string) {
@@ -356,25 +380,25 @@ export class Repl extends EventEmitter {
     }
 
     private showInspector(resp: response.InitInspect) {
-        const insp = new Inspector(this.ctx, vscode.ViewColumn.Two)
+        this.inspectorView = new Inspector(this.ctx, vscode.ViewColumn.Two)
 
-        insp.on('inspect-part', async (ndx) => {
+        this.inspectorView.on('inspect-part', async (ndx) => {
             const resp = await this.conn?.inspectNthPart(ndx)
 
             if (resp instanceof response.InitInspect) {
-                insp.show(resp.title, resp.content)
+                this.inspectorView?.show(resp.title, resp.content)
             }
         })
 
-        insp.on('inspector-action', async (ndx) => {
+        this.inspectorView.on('inspector-action', async (ndx) => {
             const resp = await this.conn?.inspectorNthAction(ndx)
 
             if (resp instanceof response.InitInspect) {
-                insp.show(resp.title, resp.content)
+                this.inspectorView?.show(resp.title, resp.content)
             }
         })
 
-        insp.show(resp.title, resp.content)
+        this.inspectorView.show(resp.title, resp.content)
     }
 
     private getVisibleDebugThreads(): number[] {

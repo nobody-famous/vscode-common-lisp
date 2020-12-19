@@ -136,8 +136,16 @@
                 "title": "Alive: Inspector"
             },
             {
-                "command": "alive.inspector-pop",
-                "title": "Alive: Inspector Pop"
+                "command": "alive.inspector-prev",
+                "title": "Alive: Inspector Prev"
+            },
+            {
+                "command": "alive.inspector-next",
+                "title": "Alive: Inspector Next"
+            },
+            {
+                "command": "alive.inspector-quit",
+                "title": "Alive: Inspector Quit"
             },
             {
                 "command": "alive.systemSkeleton",
@@ -196,7 +204,13 @@
                     "command": "alive.inspector"
                 },
                 {
-                    "command": "alive.inspector-pop"
+                    "command": "alive.inspector-prev"
+                },
+                {
+                    "command": "alive.inspector-next"
+                },
+                {
+                    "command": "alive.inspector-quit"
                 },
                 {
                     "command": "alive.systemSkeleton"
@@ -205,9 +219,19 @@
         },
         "keybindings": [
             {
-                "command": "alive.inspector-pop",
+                "command": "alive.inspector-prev",
                 "when": "clInspectorActive",
                 "key": "p"
+            },
+            {
+                "command": "alive.inspector-next",
+                "when": "clInspectorActive",
+                "key": "n"
+            },
+            {
+                "command": "alive.inspector-quit",
+                "when": "clInspectorActive",
+                "key": "q"
             },
             {
                 "command": "alive.loadFile",
