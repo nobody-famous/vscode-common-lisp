@@ -87,7 +87,8 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.macroExpandAll', macroExpandAll))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.disassemble', disassemble))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.loadFile', replLoadFile))
-    ctx.subscriptions.push(vscode.commands.registerCommand('alive.inspect', inspect))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.inspector', inspector))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.inspector-pop', inspectorPop))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.systemSkeleton', systemSkeleton))
 
     if (activeEditor === undefined || !hasValidLangId(activeEditor.document)) {
@@ -110,7 +111,16 @@ function visibleEditorsChanged(editors: vscode.TextEditor[]) {
     }
 }
 
-async function inspect() {
+async function inspectorPop() {
+    if (clRepl === undefined) {
+        vscode.window.showErrorMessage('REPL not connected')
+        return
+    }
+
+    await clRepl.inspectorPop()
+}
+
+async function inspector() {
     if (clRepl === undefined) {
         vscode.window.showErrorMessage('REPL not connected')
         return
@@ -142,7 +152,7 @@ async function inspect() {
 
     text = input !== undefined ? input : ''
 
-    await clRepl.inspect(text, pkgName)
+    await clRepl.inspector(text, pkgName)
 }
 
 async function pickFolder(folders: readonly vscode.WorkspaceFolder[]): Promise<vscode.WorkspaceFolder | undefined> {

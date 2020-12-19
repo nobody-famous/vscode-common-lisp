@@ -75,6 +75,16 @@ export function inspectorReq(msgID: number, form: string, pkg?: string) {
     return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
 }
 
+export function inspectNthPartReq(msgID: number, index: number, pkg?: string) {
+    const data = [new LispID('swank:inspect-nth-part'), index]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
+}
+
+export function inspectorPopReq(msgID: number) {
+    const data = [new LispID('swank:inspector-pop')]
+    return emacsRex(msgID, toWire(data), new LispID('nil'), true)
+}
+
 export function evalReq(msgID: number, form: string, pkg?: string) {
     const data = [new LispID('swank:interactive-eval'), form]
     return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)

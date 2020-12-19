@@ -6,31 +6,26 @@ import { InspectContent, InspectContentAction } from '../../swank/Types'
 
 export class Inspector extends EventEmitter {
     ctx: vscode.ExtensionContext
-    id: number
-    title: string
-    content: InspectContent
     viewCol: vscode.ViewColumn
     panel?: vscode.WebviewPanel
 
-    constructor(ctx: vscode.ExtensionContext, id: number, title: string, content: InspectContent, viewCol: vscode.ViewColumn) {
+    title?: string
+    content?: InspectContent
+
+    constructor(ctx: vscode.ExtensionContext, viewCol: vscode.ViewColumn) {
         super()
 
         this.ctx = ctx
-        this.id = id
-        this.title = title
-        this.content = content
         this.viewCol = viewCol
     }
 
-    run() {
-        if (this.panel !== undefined) {
-            vscode.window.showInformationMessage('Inspector panel already exists')
-            return
+    show(title: string, content: InspectContent) {
+        this.title = title
+        this.content = content
+
+        if (this.panel === undefined) {
+            this.initPanel(title)
         }
-
-        const type = `cl-inspector`
-
-        this.panel = vscode.window.createWebviewPanel(type, this.title, this.viewCol, { enableScripts: true })
 
         this.renderHtml()
     }
@@ -40,21 +35,43 @@ export class Inspector extends EventEmitter {
         this.panel = undefined
     }
 
+    private initPanel(title: string) {
+        this.panel = vscode.window.createWebviewPanel('cl-inspector', title, this.viewCol, { enableScripts: true })
+
+        this.panel.webview.onDidReceiveMessage((msg: { command: string; index: number }) => {
+            switch (msg.command.toUpperCase()) {
+                case 'VALUE':
+                    return this.emit('inspect-part', msg.index)
+            }
+        })
+
+        this.panel.onDidChangeViewState(() => {
+            vscode.commands.executeCommand('setContext', 'clInspectorActive', this.panel?.active)
+
+            if (!this.panel?.active) {
+                this.stop()
+            }
+        })
+    }
+
     private renderAction(item: InspectContentAction) {
         const display = this.escapeHtml(unescape(item.display))
         const actName = item.action.toUpperCase()
         let btnClass = ''
+        let btnClick = ''
         let str = ''
 
         if (actName === 'ACTION') {
             btnClass = 'inspect-btn-action'
+            btnClick = `inspect_action(${item.index})`
         } else if (actName === 'VALUE') {
             btnClass = 'inspect-btn-value'
+            btnClick = `inspect_value(${item.index})`
         }
 
         str += `
             <div class="inspect-action-box">
-                <button class="${btnClass}">${display}</button>
+                <button class="${btnClass}" onclick="${btnClick}">${display}</button>
             </div>
         `
 
@@ -62,6 +79,10 @@ export class Inspector extends EventEmitter {
     }
 
     private renderContent() {
+        if (this.content === undefined) {
+            return ''
+        }
+
         const display = this.content.display
         let str = ''
         let opened = false
@@ -90,8 +111,8 @@ export class Inspector extends EventEmitter {
     }
 
     private renderHtml() {
-        if (this.panel === undefined) {
-            vscode.window.showInformationMessage('Panel not undefined')
+        if (this.panel === undefined || this.title === undefined || this.content === undefined) {
+            vscode.window.showInformationMessage('Inspector not initialized')
             return
         }
 

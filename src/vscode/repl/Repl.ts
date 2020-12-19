@@ -85,7 +85,7 @@ export class Repl extends EventEmitter {
         this.view?.documentChanged()
     }
 
-    async inspect(text: string, pkg: string) {
+    async inspector(text: string, pkg: string) {
         if (this.conn === undefined) {
             return
         }
@@ -93,9 +93,20 @@ export class Repl extends EventEmitter {
         const resp = await this.conn.inspector(text, pkg)
 
         if (resp instanceof response.InitInspect) {
-            const insp = new Inspector(this.ctx, resp.id, resp.title, resp.content, vscode.ViewColumn.Two)
+            this.showInspector(resp)
+        }
+    }
 
-            insp.run()
+    async inspectorPop() {
+        if (this.conn === undefined) {
+            return
+        }
+
+        this.conn.trace = true
+        const resp = await this.conn.inspectorPop()
+
+        if (resp instanceof response.InitInspect) {
+            this.showInspector(resp)
         }
     }
 
@@ -343,6 +354,20 @@ export class Repl extends EventEmitter {
         } catch (err) {
             vscode.window.showErrorMessage(format(err))
         }
+    }
+
+    private showInspector(resp: response.InitInspect) {
+        const insp = new Inspector(this.ctx, vscode.ViewColumn.Two)
+
+        insp.on('inspect-part', async (ndx) => {
+            const resp = await this.conn?.inspectNthPart(ndx)
+
+            if (resp instanceof response.InitInspect) {
+                insp.show(resp.title, resp.content)
+            }
+        })
+
+        insp.show(resp.title, resp.content)
     }
 
     private getVisibleDebugThreads(): number[] {

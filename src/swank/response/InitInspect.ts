@@ -14,7 +14,7 @@ export class InitInspect {
         this.content = info.content
     }
 
-    static parse(event: Return): InitInspect | undefined {
+    static parse(event: Return): InitInspect | null | undefined {
         if (event.info.status !== ':OK') {
             return undefined
         }
@@ -22,7 +22,7 @@ export class InitInspect {
         const payload = event.info.payload
 
         if (!(payload instanceof SExpr)) {
-            return undefined
+            return null
         }
 
         const info = this.parsePayload(payload.parts)
