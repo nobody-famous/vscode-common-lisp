@@ -1,17 +1,6 @@
 import { format, TextEncoder } from 'util'
 import * as vscode from 'vscode'
-import {
-    Expr,
-    exprToString,
-    findAtom,
-    findExpr,
-    findInnerExpr,
-    getLexTokens,
-    Lexer,
-    Parser,
-    readLexTokens,
-    SExpr
-} from './lisp'
+import { Expr, exprToString, findAtom, findExpr, findInnerExpr, getLexTokens, Lexer, Parser, readLexTokens, SExpr } from './lisp'
 import { Colorizer, tokenModifiersLegend, tokenTypesLegend } from './vscode/colorize'
 import { CompletionProvider } from './vscode/CompletionProvider'
 import { DefinitionProvider } from './vscode/DefinitionProvider'
@@ -28,7 +17,7 @@ import {
     jumpToTop,
     openFile,
     REPL_ID,
-    toVscodePos
+    toVscodePos,
 } from './vscode/Utils'
 
 const pkgMgr = new PackageMgr()
@@ -122,33 +111,36 @@ function visibleEditorsChanged(editors: vscode.TextEditor[]) {
 }
 
 async function inspect() {
-    const editor = vscode.window.activeTextEditor
-    if (editor === undefined || !hasValidLangId(editor?.document)) {
-        return
-    }
-
     if (clRepl === undefined) {
         vscode.window.showErrorMessage('REPL not connected')
         return
     }
 
-    const pos = editor.selection.start
-    const exprs = getDocumentExprs(editor.document)
-    const atom = findAtom(exprs, pos)
+    const editor = vscode.window.activeTextEditor
     let text = ''
+    let pkgName = ':cl-user'
 
-    if (atom !== undefined) {
-        const str = exprToString(atom)
+    if (editor !== undefined) {
+        const pos = editor.selection.start
+        const exprs = getDocumentExprs(editor.document)
+        const atom = findAtom(exprs, pos)
 
-        text = typeof str === 'string' ? str : ''
+        if (atom !== undefined) {
+            const str = exprToString(atom)
+
+            text = typeof str === 'string' ? str : ''
+        }
+
+        const pkg = pkgMgr.getPackageForLine(editor.document.fileName, pos.line)
+
+        if (pkg !== undefined) {
+            pkgName = pkg.name
+        }
     }
 
     const input = await vscode.window.showInputBox({ placeHolder: 'Enter form', value: text })
 
     text = input !== undefined ? input : ''
-
-    const pkg = pkgMgr.getPackageForLine(editor.document.fileName, pos.line)
-    const pkgName = pkg?.name ?? ':cl-user'
 
     await clRepl.inspect(text, pkgName)
 }

@@ -2,20 +2,21 @@ import { EventEmitter } from 'events'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { unescape } from '../../lisp'
-import { convert } from '../../swank/SwankUtils'
 import { InspectContent, InspectContentAction } from '../../swank/Types'
 
 export class Inspector extends EventEmitter {
     ctx: vscode.ExtensionContext
+    id: number
     title: string
     content: InspectContent
     viewCol: vscode.ViewColumn
     panel?: vscode.WebviewPanel
 
-    constructor(ctx: vscode.ExtensionContext, title: string, content: InspectContent, viewCol: vscode.ViewColumn) {
+    constructor(ctx: vscode.ExtensionContext, id: number, title: string, content: InspectContent, viewCol: vscode.ViewColumn) {
         super()
 
         this.ctx = ctx
+        this.id = id
         this.title = title
         this.content = content
         this.viewCol = viewCol
@@ -27,7 +28,9 @@ export class Inspector extends EventEmitter {
             return
         }
 
-        this.panel = vscode.window.createWebviewPanel('cl-inspector', this.title, this.viewCol, { enableScripts: true })
+        const type = `cl-inspector`
+
+        this.panel = vscode.window.createWebviewPanel(type, this.title, this.viewCol, { enableScripts: true })
 
         this.renderHtml()
     }
@@ -35,6 +38,27 @@ export class Inspector extends EventEmitter {
     stop() {
         this.panel?.dispose()
         this.panel = undefined
+    }
+
+    private renderAction(item: InspectContentAction) {
+        const display = this.escapeHtml(unescape(item.display))
+        const actName = item.action.toUpperCase()
+        let btnClass = ''
+        let str = ''
+
+        if (actName === 'ACTION') {
+            btnClass = 'inspect-btn-action'
+        } else if (actName === 'VALUE') {
+            btnClass = 'inspect-btn-value'
+        }
+
+        str += `
+            <div class="inspect-action-box">
+                <button class="${btnClass}">${display}</button>
+            </div>
+        `
+
+        return str
     }
 
     private renderContent() {
@@ -54,7 +78,7 @@ export class Inspector extends EventEmitter {
                 str += `<div class="inspect-item">`
                 str += item
             } else if ('display' in item) {
-                str += this.escapeHtml(unescape(item.display))
+                str += this.renderAction(item)
             }
         }
 

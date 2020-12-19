@@ -93,7 +93,7 @@ export class Repl extends EventEmitter {
         const resp = await this.conn.inspector(text, pkg)
 
         if (resp instanceof response.InitInspect) {
-            const insp = new Inspector(this.ctx, resp.title, resp.content, vscode.ViewColumn.Two)
+            const insp = new Inspector(this.ctx, resp.id, resp.title, resp.content, vscode.ViewColumn.Two)
 
             insp.run()
         }
