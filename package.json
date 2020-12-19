@@ -144,6 +144,10 @@
                 "title": "Alive: Inspector Next"
             },
             {
+                "command": "alive.inspector-refresh",
+                "title": "Alive: Inspector Refresh"
+            },
+            {
                 "command": "alive.inspector-quit",
                 "title": "Alive: Inspector Quit"
             },
@@ -210,6 +214,9 @@
                     "command": "alive.inspector-next"
                 },
                 {
+                    "command": "alive.inspector-refresh"
+                },
+                {
                     "command": "alive.inspector-quit"
                 },
                 {
@@ -227,6 +234,11 @@
                 "command": "alive.inspector-next",
                 "when": "clInspectorActive",
                 "key": "n"
+            },
+            {
+                "command": "alive.inspector-refresh",
+                "when": "clInspectorActive",
+                "key": "r"
             },
             {
                 "command": "alive.inspector-quit",

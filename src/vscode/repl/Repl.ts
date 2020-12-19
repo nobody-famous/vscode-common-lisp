@@ -98,6 +98,18 @@ export class Repl extends EventEmitter {
         }
     }
 
+    async inspectorRefresh() {
+        if (this.conn === undefined) {
+            return
+        }
+
+        const resp = await this.conn.inspectorRefresh()
+
+        if (resp instanceof response.InitInspect) {
+            this.showInspector(resp)
+        }
+    }
+
     async inspectorPrev() {
         if (this.conn === undefined) {
             return
@@ -109,7 +121,7 @@ export class Repl extends EventEmitter {
             this.showInspector(resp)
         }
     }
-    
+
     async inspectorNext() {
         if (this.conn === undefined) {
             return
@@ -130,7 +142,6 @@ export class Repl extends EventEmitter {
         await this.conn.inspectorQuit()
 
         this.inspectorView?.stop()
-        this.inspectorView = undefined
     }
 
     async findDefs(label: string, pkg: string) {
@@ -380,23 +391,25 @@ export class Repl extends EventEmitter {
     }
 
     private showInspector(resp: response.InitInspect) {
-        this.inspectorView = new Inspector(this.ctx, vscode.ViewColumn.Two)
+        if (this.inspectorView === undefined) {
+            this.inspectorView = new Inspector(this.ctx, vscode.ViewColumn.Two)
 
-        this.inspectorView.on('inspect-part', async (ndx) => {
-            const resp = await this.conn?.inspectNthPart(ndx)
+            this.inspectorView.on('inspect-part', async (ndx) => {
+                const resp = await this.conn?.inspectNthPart(ndx)
 
-            if (resp instanceof response.InitInspect) {
-                this.inspectorView?.show(resp.title, resp.content)
-            }
-        })
+                if (resp instanceof response.InitInspect) {
+                    this.inspectorView?.show(resp.title, resp.content)
+                }
+            })
 
-        this.inspectorView.on('inspector-action', async (ndx) => {
-            const resp = await this.conn?.inspectorNthAction(ndx)
+            this.inspectorView.on('inspector-action', async (ndx) => {
+                const resp = await this.conn?.inspectorNthAction(ndx)
 
-            if (resp instanceof response.InitInspect) {
-                this.inspectorView?.show(resp.title, resp.content)
-            }
-        })
+                if (resp instanceof response.InitInspect) {
+                    this.inspectorView?.show(resp.title, resp.content)
+                }
+            })
+        }
 
         this.inspectorView.show(resp.title, resp.content)
     }

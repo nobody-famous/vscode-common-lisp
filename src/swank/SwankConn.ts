@@ -31,6 +31,7 @@ import {
     inspectorNextReq,
     inspectorQuitReq,
     inspectNthActionReq,
+    inspectorRefreshReq,
 } from './SwankRequest'
 import { SwankResponse } from './SwankResponse'
 import { ConnInfo } from './Types'
@@ -167,6 +168,10 @@ export class SwankConn extends EventEmitter {
     
     async inspectorNext(): Promise<response.InitInspect | response.Abort> {
         return await this.requestFn(inspectorNextReq, response.InitInspect)
+    }
+    
+    async inspectorRefresh(): Promise<response.InitInspect | response.Abort> {
+        return await this.requestFn(inspectorRefreshReq, response.InitInspect)
     }
     
     async inspectorQuit(): Promise<response.InitInspect | response.Abort> {

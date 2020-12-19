@@ -90,6 +90,7 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.inspector', inspector))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.inspector-prev', inspectorPrev))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.inspector-next', inspectorNext))
+    ctx.subscriptions.push(vscode.commands.registerCommand('alive.inspector-refresh', inspectorRefresh))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.inspector-quit', inspectorQuit))
     ctx.subscriptions.push(vscode.commands.registerCommand('alive.systemSkeleton', systemSkeleton))
 
@@ -131,6 +132,15 @@ async function inspectorNext() {
     await clRepl.inspectorNext()
 }
 
+async function inspectorRefresh() {
+    if (clRepl === undefined) {
+        vscode.window.showErrorMessage('REPL not connected')
+        return
+    }
+
+    await clRepl.inspectorRefresh()
+}
+
 async function inspectorQuit() {
     if (clRepl === undefined) {
         vscode.window.showErrorMessage('REPL not connected')
@@ -167,7 +177,9 @@ async function inspector() {
 
     text = input !== undefined ? input : ''
 
-    await clRepl.inspector(text, pkgName)
+    if (text.trim() !== '') {
+        await clRepl.inspector(text, pkgName)
+    }
 }
 
 function getInspectText(editor: vscode.TextEditor, pos: vscode.Position) {

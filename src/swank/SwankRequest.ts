@@ -95,6 +95,11 @@ export function inspectorNextReq(msgID: number) {
     return emacsRex(msgID, toWire(data), new LispID('nil'), true)
 }
 
+export function inspectorRefreshReq(msgID: number) {
+    const data = [new LispID('swank:inspector-reinspect')]
+    return emacsRex(msgID, toWire(data), new LispID('nil'), true)
+}
+
 export function inspectorQuitReq(msgID: number) {
     const data = [new LispID('swank:quit-inspector')]
     return emacsRex(msgID, toWire(data), new LispID('nil'), true)

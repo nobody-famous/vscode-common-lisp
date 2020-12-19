@@ -23,10 +23,11 @@ export class Inspector extends EventEmitter {
         this.title = title
         this.content = content
 
-        if (this.panel === undefined) {
-            this.initPanel(title)
+        if (this.panel !== undefined) {
+            this.stop()
         }
 
+        this.initPanel(title)
         this.renderHtml()
     }
 
@@ -49,10 +50,6 @@ export class Inspector extends EventEmitter {
 
         this.panel.onDidChangeViewState(() => {
             vscode.commands.executeCommand('setContext', 'clInspectorActive', this.panel?.active)
-
-            if (!this.panel?.active) {
-                this.stop()
-            }
         })
     }
 
