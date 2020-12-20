@@ -11,7 +11,7 @@ import {
     Lexer,
     Parser,
     readLexTokens,
-    SExpr
+    SExpr,
 } from './lisp'
 import { Colorizer, tokenModifiersLegend, tokenTypesLegend } from './vscode/colorize'
 import { CompletionProvider } from './vscode/CompletionProvider'
@@ -29,7 +29,7 @@ import {
     jumpToTop,
     openFile,
     REPL_ID,
-    toVscodePos
+    toVscodePos,
 } from './vscode/Utils'
 
 const pkgMgr = new PackageMgr()
@@ -531,11 +531,11 @@ async function editorChanged(editor?: vscode.TextEditor) {
 }
 
 function openTextDocument(doc: vscode.TextDocument) {
-    if (activeEditor === undefined || !hasValidLangId(doc)) {
+    if (!hasValidLangId(doc)) {
         return
     }
 
-    readLexTokens(activeEditor.document.fileName, activeEditor.document.getText())
+    readLexTokens(doc.fileName, doc.getText())
 }
 
 function changeTextDocument(event: vscode.TextDocumentChangeEvent) {
