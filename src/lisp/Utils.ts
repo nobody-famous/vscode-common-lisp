@@ -196,78 +196,128 @@ export function findAtom(exprs: Expr[], pos: Position): Atom | undefined {
     return undefined
 }
 
+export function findString(exprs: Expr[], pos: Position): string | undefined {
+    const atom = findAtom(exprs, pos)
+
+    if (atom === undefined) {
+        return undefined
+    }
+
+    return exprToString(atom)
+}
+
 export function isLetName(name: string | undefined): boolean {
     const upper = name?.toUpperCase()
 
     return upper === 'LET' || upper === 'LET*'
 }
 
+export function isFletName(name: string | undefined): boolean {
+    const upper = name?.toUpperCase()
+
+    return upper === 'FLET' || upper === 'LABELS'
+}
+
 export function unescape(str: string): string {
     return str.replace(/\\./g, (item) => (item.length > 0 ? item.charAt(1) : item))
 }
 
-export function getLocals(expr: Expr, pos: Position): Expr[] {
+export function getLocalDef(expr: Expr, pos: Position, label: string): Expr | undefined {
     if (!(expr instanceof SExpr) || !posInExpr(expr, pos)) {
-        return []
+        return
     }
 
     const name = expr.getName()?.toUpperCase()
-    let args: Expr[] = []
 
     if (name === 'DEFUN') {
-        args = args.concat(getDefunArgs(expr))
-        args = args.concat(getBodyLocals(expr.parts.slice(3), pos))
+        const argExpr = getDefunArg(expr, label)
+        const bodyExpr = getBodyLocal(expr.parts.slice(3), pos, label)
+
+        return bodyExpr ?? argExpr
+    } else if (isLetName(name)) {
+        return getLetDef(expr, pos, label)
     }
 
-    return args
+    return undefined
 }
 
-function getBodyLocals(body: Expr[], pos: Position): Expr[] {
-    for (const expr of body) {
-        if (posInExpr(expr, pos)) {
-            return getLocals(expr, pos)
+function getLetDef(expr: SExpr, pos: Position, label: string): Expr | undefined {
+    if (expr.parts.length < 2) {
+        return undefined
+    }
+
+    const bindings = expr.parts[1]
+    let def: Expr | undefined = undefined
+
+    if (bindings instanceof SExpr) {
+        for (const binding of bindings.parts) {
+            if (!(binding instanceof SExpr)) {
+                continue
+            }
+
+            def = getComplexArg(binding, label)
+
+            if (def !== undefined) {
+                break
+            }
         }
     }
 
-    return []
+    const bodyDef = getBodyLocal(expr.parts.slice(2), pos, label)
+
+    return bodyDef ?? def
 }
 
-function getDefunArgs(expr: SExpr): Expr[] {
+function getBodyLocal(body: Expr[], pos: Position, label: string): Expr | undefined {
+    for (const expr of body) {
+        if (posInExpr(expr, pos)) {
+            return getLocalDef(expr, pos, label)
+        }
+    }
+
+    return undefined
+}
+
+function getDefunArg(expr: SExpr, label: string): Expr | undefined {
     if (expr.parts.length < 3) {
-        return []
+        return undefined
     }
 
     const argList = expr.parts[2]
 
     if (!(argList instanceof SExpr)) {
-        return []
+        return undefined
     }
-
-    const argExprs: Expr[] = []
 
     for (const arg of argList.parts) {
         const nameStr = exprToString(arg)
 
-        if (nameStr !== undefined && !nameStr.startsWith('&')) {
-            argExprs.push(arg)
+        if (nameStr === label) {
+            return arg
         } else if (arg instanceof SExpr) {
-            const nameExpr = getComplexArgName(arg)
+            const nameExpr = getComplexArg(arg, label)
 
             if (nameExpr !== undefined) {
-                argExprs.push(nameExpr)
+                return nameExpr
             }
         }
     }
 
-    return argExprs
+    return undefined
 }
 
-function getComplexArgName(expr: SExpr): Expr | undefined {
+function getComplexArg(expr: SExpr, label: string): Expr | undefined {
     if (expr.parts.length === 0) {
         return undefined
     }
 
-    return expr.parts[0] instanceof Atom ? expr.parts[0] : undefined
+    const part = exprToString(expr.parts[0])
+
+    if (part === label) {
+        return expr.parts[0]
+    }
+
+    return undefined
 }
 
 function posAfterStart(start: Position, pos: Position): boolean {

@@ -6,8 +6,9 @@ import {
     findAtom,
     findExpr,
     findInnerExpr,
+    findString,
     getLexTokens,
-    getLocals,
+    getLocalDef,
     Lexer,
     Parser,
     readLexTokens,
@@ -852,45 +853,31 @@ function getDefinitionProvider(): vscode.DefinitionProvider {
                 await updatePkgMgr(doc, exprs)
 
                 const pkg = pkgMgr.getPackageForLine(doc.fileName, pos.line)
-                const locals: vscode.Location[] = []
+                const label = findString(exprs, pos)
+                let local: vscode.Location | undefined = undefined
 
-                if (topExpr !== undefined) {
-                    const locExprs = getLocals(topExpr, pos)
-                    const atom = findAtom(exprs, pos)
-                    let label = ''
+                if (!label?.startsWith('#') && topExpr !== undefined) {
+                    const locDef = label !== undefined ? getLocalDef(topExpr, pos, label) : undefined
 
-                    if (atom !== undefined) {
-                        const text = exprToString(atom)
-
-                        if (text !== undefined) {
-                            label = text
-                        }
-                    }
-
-                    for (const locExpr of locExprs) {
-                        const name = exprToString(locExpr)
-                        if (name === undefined || name !== label) {
-                            continue
-                        }
-
-                        const start = toVscodePos(locExpr.start)
+                    if (locDef !== undefined) {
+                        const start = toVscodePos(locDef.start)
                         const range = new vscode.Range(start, start)
 
-                        locals.push(new vscode.Location(doc.uri, range))
+                        local = new vscode.Location(doc.uri, range)
                     }
                 }
 
-                let replDefs: vscode.Location[] = []
-
-                if (clRepl !== undefined && pkg !== undefined) {
-                    const defs = await provider.getDefinitions(clRepl, pkg.name, exprs, pos)
-
-                    if (defs !== undefined) {
-                        replDefs = defs
-                    }
+                if (clRepl === undefined || pkg === undefined) {
+                    return []
                 }
 
-                return locals.concat(replDefs)
+                const defs = await provider.getDefinitions(clRepl, pkg.name, exprs, pos)
+
+                if (local !== undefined) {
+                    defs?.push(local)
+                }
+
+                return defs ?? []
             } catch (err) {
                 vscode.window.showErrorMessage(format(err))
                 return []
