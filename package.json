@@ -2,7 +2,7 @@
     "name": "alive",
     "displayName": "Alive",
     "description": "Average Lisp VSCode Environment",
-    "version": "0.0.9",
+    "version": "0.1.0",
     "publisher": "rheller",
     "repository": {
         "url": "https://github.com/nobody-famous/alive"
@@ -228,22 +228,22 @@
             {
                 "command": "alive.inspector-prev",
                 "when": "clInspectorActive",
-                "key": "p"
+                "key": "ctrl+p"
             },
             {
                 "command": "alive.inspector-next",
                 "when": "clInspectorActive",
-                "key": "n"
+                "key": "ctrl+n"
             },
             {
                 "command": "alive.inspector-refresh",
                 "when": "clInspectorActive",
-                "key": "r"
+                "key": "ctrl+r"
             },
             {
                 "command": "alive.inspector-quit",
                 "when": "clInspectorActive",
-                "key": "q"
+                "key": "ctrl+q"
             },
             {
                 "command": "alive.loadFile",
