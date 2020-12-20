@@ -853,7 +853,8 @@ function getDefinitionProvider(): vscode.DefinitionProvider {
                 await updatePkgMgr(doc, exprs)
 
                 const pkg = pkgMgr.getPackageForLine(doc.fileName, pos.line)
-                const label = findString(exprs, pos)
+                const atom = findAtom(exprs, pos)
+                const label = atom !== undefined ? exprToString(atom) : undefined
                 let local: vscode.Location | undefined = undefined
 
                 if (!label?.startsWith('#') && topExpr !== undefined) {
@@ -863,7 +864,9 @@ function getDefinitionProvider(): vscode.DefinitionProvider {
                         const start = toVscodePos(locDef.start)
                         const range = new vscode.Range(start, start)
 
-                        local = new vscode.Location(doc.uri, range)
+                        if (start.line !== atom?.start.line || start.character !== atom.start.character) {
+                            local = new vscode.Location(doc.uri, range)
+                        }
                     }
                 }
 
