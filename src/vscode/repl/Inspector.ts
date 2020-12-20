@@ -34,6 +34,7 @@ export class Inspector extends EventEmitter {
     stop() {
         this.panel?.dispose()
         this.panel = undefined
+        vscode.commands.executeCommand('setContext', 'clInspectorActive', false)
     }
 
     private initPanel(title: string) {
