@@ -6,13 +6,12 @@ import {
     findAtom,
     findExpr,
     findInnerExpr,
-    findString,
     getLexTokens,
     getLocalDef,
     Lexer,
     Parser,
     readLexTokens,
-    SExpr,
+    SExpr
 } from './lisp'
 import { Colorizer, tokenModifiersLegend, tokenTypesLegend } from './vscode/colorize'
 import { CompletionProvider } from './vscode/CompletionProvider'
@@ -30,7 +29,7 @@ import {
     jumpToTop,
     openFile,
     REPL_ID,
-    toVscodePos,
+    toVscodePos
 } from './vscode/Utils'
 
 const pkgMgr = new PackageMgr()
