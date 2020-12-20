@@ -1,6 +1,18 @@
 import { format, TextEncoder } from 'util'
 import * as vscode from 'vscode'
-import { Expr, exprToString, findAtom, findExpr, findInnerExpr, getLexTokens, Lexer, Parser, readLexTokens, SExpr } from './lisp'
+import {
+    Expr,
+    exprToString,
+    findAtom,
+    findExpr,
+    findInnerExpr,
+    getLexTokens,
+    getLocals,
+    Lexer,
+    Parser,
+    readLexTokens,
+    SExpr,
+} from './lisp'
 import { Colorizer, tokenModifiersLegend, tokenTypesLegend } from './vscode/colorize'
 import { CompletionProvider } from './vscode/CompletionProvider'
 import { DefinitionProvider } from './vscode/DefinitionProvider'
@@ -252,7 +264,7 @@ async function disassemble() {
     }
 
     try {
-        const expr = await getTopExpr()
+        const expr = await getTopExpr(editor.selection.start)
         if (expr === undefined || !(expr instanceof SExpr) || expr.parts.length < 2) {
             return
         }
@@ -691,8 +703,12 @@ async function sendToRepl() {
             return
         }
 
-        const expr = await getTopExpr()
-        if (editor === undefined || expr === undefined) {
+        if (editor === undefined) {
+            return
+        }
+
+        const expr = await getTopExpr(editor.selection.start)
+        if (expr === undefined) {
             return
         }
 
@@ -720,7 +736,7 @@ async function selectSexpr() {
             return
         }
 
-        const expr = await getTopExpr()
+        const expr = await getTopExpr(editor.selection.start)
 
         if (expr !== undefined) {
             editor.selection = new vscode.Selection(toVscodePos(expr.start), toVscodePos(expr.end))
@@ -730,7 +746,7 @@ async function selectSexpr() {
     }
 }
 
-async function getTopExpr() {
+async function getTopExpr(pos: vscode.Position) {
     try {
         const editor = vscode.window.activeTextEditor
         if (editor === undefined || !hasValidLangId(editor.document)) {
@@ -738,7 +754,6 @@ async function getTopExpr() {
         }
 
         const exprs = getDocumentExprs(editor.document)
-        const pos = editor.selection.start
         const expr = findExpr(exprs, pos)
 
         if (expr === undefined || expr.start === undefined || expr.end === undefined) {
@@ -832,16 +847,50 @@ function getDefinitionProvider(): vscode.DefinitionProvider {
             try {
                 const provider = new DefinitionProvider()
                 const exprs = getDocumentExprs(doc)
+                const topExpr = await getTopExpr(pos)
 
                 await updatePkgMgr(doc, exprs)
 
                 const pkg = pkgMgr.getPackageForLine(doc.fileName, pos.line)
+                const locals: vscode.Location[] = []
+
+                if (topExpr !== undefined) {
+                    const locExprs = getLocals(topExpr, pos)
+                    const atom = findAtom(exprs, pos)
+                    let label = ''
+
+                    if (atom !== undefined) {
+                        const text = exprToString(atom)
+
+                        if (text !== undefined) {
+                            label = text
+                        }
+                    }
+
+                    for (const locExpr of locExprs) {
+                        const name = exprToString(locExpr)
+                        if (name === undefined || name !== label) {
+                            continue
+                        }
+
+                        const start = toVscodePos(locExpr.start)
+                        const range = new vscode.Range(start, start)
+
+                        locals.push(new vscode.Location(doc.uri, range))
+                    }
+                }
+
+                let replDefs: vscode.Location[] = []
 
                 if (clRepl !== undefined && pkg !== undefined) {
-                    return await provider.getDefinitions(clRepl, pkg.name, exprs, pos)
-                } else {
-                    return []
+                    const defs = await provider.getDefinitions(clRepl, pkg.name, exprs, pos)
+
+                    if (defs !== undefined) {
+                        replDefs = defs
+                    }
                 }
+
+                return locals.concat(replDefs)
             } catch (err) {
                 vscode.window.showErrorMessage(format(err))
                 return []

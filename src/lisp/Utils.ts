@@ -1,6 +1,6 @@
 import { convert } from '../swank/SwankUtils'
 import { StringMap } from '../swank/Types'
-import { Atom, Defun, Expr, Let, SExpr } from './Expr'
+import { Atom, Expr, SExpr } from './Expr'
 import { Lexer } from './Lexer'
 import { Token } from './Token'
 import { Position } from './Types'
@@ -206,30 +206,70 @@ export function unescape(str: string): string {
     return str.replace(/\\./g, (item) => (item.length > 0 ? item.charAt(1) : item))
 }
 
-export function getLocals(expr: Expr, pos: Position): string[] {
+export function getLocals(expr: Expr, pos: Position): Expr[] {
     if (!(expr instanceof SExpr) || !posInExpr(expr, pos)) {
         return []
     }
 
-    let locals: string[] = []
     const name = expr.getName()?.toUpperCase()
+    let args: Expr[] = []
 
     if (name === 'DEFUN') {
-        const defun = Defun.from(expr)
-        if (defun !== undefined) {
-            locals = locals.concat(defun.args)
-            defun.body.forEach((expr) => (locals = locals.concat(getLocals(expr, pos))))
-        }
-    } else if (isLetName(name)) {
-        const letExpr = Let.from(expr)
-        if (letExpr !== undefined) {
-            locals = locals.concat(Object.keys(letExpr.vars))
-            letExpr.body.forEach((expr) => (locals = locals.concat(getLocals(expr, pos))))
+        args = args.concat(getDefunArgs(expr))
+        args = args.concat(getBodyLocals(expr.parts.slice(3), pos))
+    }
+
+    return args
+}
+
+function getBodyLocals(body: Expr[], pos: Position): Expr[] {
+    for (const expr of body) {
+        if (posInExpr(expr, pos)) {
+            return getLocals(expr, pos)
         }
     }
 
-    return locals
+    return []
 }
+
+function getDefunArgs(expr: SExpr): Expr[] {
+    if (expr.parts.length < 3) {
+        return []
+    }
+
+    const argList = expr.parts[2]
+
+    if (!(argList instanceof SExpr)) {
+        return []
+    }
+
+    const argExprs: Expr[] = []
+
+    for (const arg of argList.parts) {
+        const nameStr = exprToString(arg)
+
+        if (nameStr !== undefined && !nameStr.startsWith('&')) {
+            argExprs.push(arg)
+        } else if (arg instanceof SExpr) {
+            const nameExpr = getComplexArgName(arg)
+
+            if (nameExpr !== undefined) {
+                argExprs.push(nameExpr)
+            }
+        }
+    }
+
+    return argExprs
+}
+
+function getComplexArgName(expr: SExpr): Expr | undefined {
+    if (expr.parts.length === 0) {
+        return undefined
+    }
+
+    return expr.parts[0] instanceof Atom ? expr.parts[0] : undefined
+}
+
 function posAfterStart(start: Position, pos: Position): boolean {
     if (pos.line < start.line) {
         return false
