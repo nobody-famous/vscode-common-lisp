@@ -59,6 +59,9 @@ export interface SwankConn {
     emit(event: 'debug-return', swankEvent: event.DebugReturn): boolean
     on(event: 'debug-return', listener: (swankEvent: event.DebugReturn) => void): this
 
+    emit(event: 'read-string', swankEvent: event.ReadString): boolean
+    on(event: 'read-string', listener: (swankEvent: event.ReadString) => void): this
+
     emit(event: 'msg', message: string): boolean
     on(event: 'msg', listener: (message: string) => void): this
 }
@@ -337,7 +340,13 @@ export class SwankConn extends EventEmitter {
         }
     }
 
-    private processReadString(event: event.ReadString) {}
+    private processReadString(event: event.ReadString) {
+        try {
+            this.emit('read-string', event)
+        } catch (err) {
+            this.emit('msg', err.toString())
+        }
+    }
 
     private processDebugActivate(event: event.DebugActivate) {
         if (this.ignoreDebug) {
