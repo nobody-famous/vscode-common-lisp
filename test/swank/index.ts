@@ -213,6 +213,17 @@ async function testFrame() {
     }
 }
 
+async function testRepl(conn: SwankConn) {
+    await conn.replCreate()
+    await conn.swankRequire()
+
+    conn.trace = true
+    const resp = await conn.replEval('(read)', 'common-lisp-user')
+    console.log(resp)
+
+    conn.trace = false
+}
+
 // Wrap in an IIFE so await works
 ;(async () => {
     const conn = new SwankConn('localhost', 4005)
@@ -224,7 +235,7 @@ async function testFrame() {
     try {
         await conn.connect()
 
-        await testConnInfo(conn)
+        // await testConnInfo(conn)
         // await testPackage(conn)
         // await testListPkgs(conn)
         // await testDebug()
@@ -235,6 +246,7 @@ async function testFrame() {
         // await testFindDefs()
         // await testMacros()
         // await testInspector()
+        await testRepl(conn)
     } catch (err) {
         console.log('FAILED', err)
     } finally {

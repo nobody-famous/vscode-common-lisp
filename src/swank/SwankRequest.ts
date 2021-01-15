@@ -1,6 +1,8 @@
 import { LispID, LispSymbol } from './LispID'
 import { toWire } from './SwankUtils'
 
+type emacsRexThread = number | boolean | LispSymbol
+
 export class SwankRequest {
     msgID: number
     data: string[]
@@ -20,7 +22,7 @@ export class SwankRequest {
     }
 }
 
-export function emacsRex(msgID: number, data: string, pkg: any, threadID: number | boolean) {
+export function emacsRex(msgID: number, data: string, pkg: any, threadID: emacsRexThread) {
     const rexData = [toWire(new LispSymbol('emacs-rex')), data, toWire(pkg), toWire(threadID)]
     return new SwankRequest(msgID, rexData)
 }
@@ -47,6 +49,11 @@ export function completionsReq(msgID: number, prefix: string, pkg: string) {
 
 export function opArgsReq(msgID: number, name: string, pkg: string) {
     const data = [new LispID('swank:operator-arglist'), name, pkg]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
+}
+
+export function swankRequireReq(msgID: number, pkg?: string) {
+    const data = [new LispID('swank:swank-require (quote (swank-repl))')]
     return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
 }
 
@@ -172,5 +179,19 @@ export function debuggerAbortReq(msgID: number, threadID: number, pkg?: string) 
 
 export function debugThreadReq(msgID: number, threadNdx: number, pid: number, pkg?: string) {
     const data = [new LispID('swank:start-swank-server-in-thread'), threadNdx, `/tmp/slime.${pid}`]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
+}
+
+//
+// REPL Commands
+//
+
+export function replEvalReq(msgID: number, form: string, pkg?: string) {
+    const data = [new LispID('swank-repl:listener-eval'), form]
+    return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), new LispSymbol('repl-thread'))
+}
+
+export function replCreateReq(msgID: number, pkg?: string) {
+    const data = [new LispID('swank-repl:create-repl'), false, new LispSymbol('coding-system'), 'utf-8-unix']
     return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
 }

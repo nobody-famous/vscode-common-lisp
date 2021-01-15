@@ -33,6 +33,9 @@ import {
     inspectorQuitReq,
     inspectNthActionReq,
     inspectorRefreshReq,
+    replEvalReq,
+    swankRequireReq,
+    replCreateReq,
 } from './SwankRequest'
 import { SwankResponse } from './SwankResponse'
 import { ConnInfo } from './Types'
@@ -194,6 +197,18 @@ export class SwankConn extends EventEmitter {
         return await this.requestFn(inspectorQuitReq, response.InitInspect)
     }
 
+    async swankRequire(pkg?: string): Promise<response.ListPackages | response.Abort> {
+        return await this.requestFn(swankRequireReq, response.ListPackages, pkg)
+    }
+
+    async replCreate(pkg?: string): Promise<response.ListPackages | response.Abort> {
+        return await this.requestFn(replCreateReq, response.ListPackages, pkg)
+    }
+
+    async replEval(str: string, pkg?: string): Promise<response.Eval | response.Abort> {
+        return await this.requestFn(replEvalReq, response.Eval, str, pkg)
+    }
+
     async eval(str: string, pkg?: string): Promise<response.Eval | response.Abort> {
         return await this.requestFn(evalReq, response.Eval, str, pkg)
     }
@@ -247,16 +262,16 @@ export class SwankConn extends EventEmitter {
         return parsed
     }
 
-    connError(err: Error) {
+    private connError(err: Error) {
         this.emit('conn-err', `REPL Connection error ${err.toString()}`)
     }
 
-    connClosed() {
+    private connClosed() {
         this.conn = undefined
         this.emit('close')
     }
 
-    readData(data: Buffer) {
+    private readData(data: Buffer) {
         try {
             this.addToBuffer(data)
             this.readResponses()
@@ -265,11 +280,11 @@ export class SwankConn extends EventEmitter {
         }
     }
 
-    addToBuffer(data: Buffer) {
+    private addToBuffer(data: Buffer) {
         this.buffer = this.buffer === undefined ? data : Buffer.concat([this.buffer, data])
     }
 
-    readResponses() {
+    private readResponses() {
         while (this.buffer !== undefined && this.buffer.length > 0) {
             this.readResponse()
 
@@ -287,7 +302,7 @@ export class SwankConn extends EventEmitter {
         }
     }
 
-    readResponse() {
+    private readResponse() {
         if (this.buffer === undefined) {
             return
         }
@@ -300,7 +315,7 @@ export class SwankConn extends EventEmitter {
         this.buffer = this.curResponse.addData(this.buffer)
     }
 
-    processEvent(event: event.SwankEvent) {
+    private processEvent(event: event.SwankEvent) {
         if (event === undefined) {
             return
         }
@@ -313,6 +328,8 @@ export class SwankConn extends EventEmitter {
             this.processDebugActivate(event as event.DebugActivate)
         } else if (event.op === ':DEBUG-RETURN') {
             this.processDebugReturn(event as event.DebugReturn)
+        } else if (event.op === ':READ-STRING') {
+            this.processReadString(event as event.ReadString)
         } else if (event.op === ':NEW-FEATURES') {
             // Ignore
         } else {
@@ -320,7 +337,9 @@ export class SwankConn extends EventEmitter {
         }
     }
 
-    processDebugActivate(event: event.DebugActivate) {
+    private processReadString(event: event.ReadString) {}
+
+    private processDebugActivate(event: event.DebugActivate) {
         if (this.ignoreDebug) {
             return
         }
@@ -332,7 +351,7 @@ export class SwankConn extends EventEmitter {
         }
     }
 
-    processDebugReturn(event: event.DebugReturn) {
+    private processDebugReturn(event: event.DebugReturn) {
         try {
             this.emit('debug-return', event)
         } catch (err) {
@@ -340,7 +359,7 @@ export class SwankConn extends EventEmitter {
         }
     }
 
-    async processDebug(event: event.Debug) {
+    private async processDebug(event: event.Debug) {
         if (this.ignoreDebug) {
             try {
                 await this.debugAbort(event.threadID)
@@ -354,7 +373,7 @@ export class SwankConn extends EventEmitter {
         this.emit('debug', event)
     }
 
-    handlerDone(id: number) {
+    private handlerDone(id: number) {
         delete this.handlers[id]
 
         if (id in this.timeouts) {
@@ -363,7 +382,7 @@ export class SwankConn extends EventEmitter {
         }
     }
 
-    processReturn(event: event.Return) {
+    private processReturn(event: event.Return) {
         try {
             const { resolve, reject } = this.handlerForID(event.id)
             const status = event.info?.status
@@ -380,7 +399,7 @@ export class SwankConn extends EventEmitter {
         }
     }
 
-    handlerForID(id: number) {
+    private handlerForID(id: number) {
         const handler = this.handlers[id]
 
         if (handler === undefined) {
@@ -390,7 +409,7 @@ export class SwankConn extends EventEmitter {
         return handler
     }
 
-    async sendRequest(req: SwankRequest): Promise<event.Return> {
+    private async sendRequest(req: SwankRequest): Promise<event.Return> {
         const msg = req.encode()
 
         await this.writeMessage(msg)
@@ -398,13 +417,13 @@ export class SwankConn extends EventEmitter {
         return this.waitForResponse(req.msgID)
     }
 
-    waitForResponse(id: number): Promise<event.Return> {
+    private waitForResponse(id: number): Promise<event.Return> {
         return new Promise((resolve, reject) => {
             this.handlers[id] = { resolve, reject }
         })
     }
 
-    writeMessage(msg: string) {
+    private writeMessage(msg: string) {
         return new Promise<void>((resolve, reject) => {
             if (this.conn === undefined) {
                 return reject('No connection')
@@ -424,7 +443,7 @@ export class SwankConn extends EventEmitter {
         })
     }
 
-    nextID(): number {
+    private nextID(): number {
         const id = this.msgID
 
         this.msgID += 1
