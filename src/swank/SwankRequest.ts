@@ -211,3 +211,8 @@ export function returnStringEvent(text: string, threadID: number, tag: number) {
     const rexData = [toWire(new LispSymbol('emacs-return-string')), toWire(threadID), toWire(tag), toWire(text)]
     return new SwankMessage(rexData)
 }
+
+export function abortReadEvent(threadID: number, tag: number) {
+    const rexData = [toWire(new LispSymbol('emacs-abort-read')), toWire(threadID), toWire(tag)]
+    return new SwankMessage(rexData)
+}

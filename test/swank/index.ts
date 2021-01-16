@@ -219,6 +219,7 @@ async function testRepl(conn: SwankConn) {
 
     conn.on('read-string', (event) => {
         conn.returnString('foo\n', event.threadID, event.tag)
+        // conn.abortRead(event.threadID, event.tag)
     })
 
     conn.on('write-string', (event) => {

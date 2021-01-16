@@ -37,6 +37,7 @@ import {
     swankRequireReq,
     replCreateReq,
     returnStringEvent,
+    abortReadEvent,
 } from './SwankRequest'
 import { SwankResponse } from './SwankResponse'
 import { ConnInfo } from './Types'
@@ -271,6 +272,13 @@ export class SwankConn extends EventEmitter {
 
     async returnString(text: string, threadID: number, tag: number) {
         const event = returnStringEvent(text, threadID, tag)
+        const msg = event.encode()
+
+        await this.writeMessage(msg)
+    }
+
+    async abortRead(threadID: number, tag: number) {
+        const event = abortReadEvent(threadID, tag)
         const msg = event.encode()
 
         await this.writeMessage(msg)

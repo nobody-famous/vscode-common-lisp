@@ -560,7 +560,15 @@ export class Repl extends EventEmitter {
         }
     }
 
-    private async handleReadString(event: ReadString) {}
+    private async handleReadString(event: ReadString) {
+        const text = await vscode.window.showInputBox({ placeHolder: 'Enter text' })
+
+        if (text !== undefined) {
+            this.conn?.returnString(`${text}${EOL}`, event.threadID, event.tag)
+        } else {
+            this.conn?.abortRead(event.threadID, event.tag)
+        }
+    }
 
     private async handleWriteString(event: WriteString) {
         const converted = convert(event.text)
