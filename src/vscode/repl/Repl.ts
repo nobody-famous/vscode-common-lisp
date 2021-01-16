@@ -1,9 +1,10 @@
 import { EventEmitter } from 'events'
+import { EOL } from 'os'
 import { format } from 'util'
 import * as vscode from 'vscode'
-import { Expr, InPackage, Lexer, Parser, unescape } from '../../lisp'
+import { Expr, InPackage, isString, Lexer, Parser, unescape } from '../../lisp'
 import { allLabels } from '../../lisp/keywords'
-import { Debug, DebugActivate, DebugReturn } from '../../swank/event'
+import { Debug, DebugActivate, DebugReturn, ReadString, WriteString } from '../../swank/event'
 import * as response from '../../swank/response'
 import { SwankConn } from '../../swank/SwankConn'
 import { convert } from '../../swank/SwankUtils'
@@ -52,13 +53,17 @@ export class Repl extends EventEmitter {
             this.conn.on('activate', (event) => this.handleDebugActivate(event))
             this.conn.on('debug', (event) => this.handleDebug(event))
             this.conn.on('debug-return', (event) => this.handleDebugReturn(event))
+            this.conn.on('read-string', (event) => this.handleReadString(event))
+            this.conn.on('write-string', (event) => this.handleWriteString(event))
             this.conn.on('close', () => this.onClose())
 
             const resp = await this.conn.connect()
             await this.view.open()
             await this.view.show()
 
-            this.handleConnInfo(resp.info)
+            await this.handleConnInfo(resp.info)
+            await this.conn.swankRequire()
+            await this.conn.replCreate()
         } catch (err) {
             this.conn = undefined
             throw err
@@ -158,13 +163,13 @@ export class Repl extends EventEmitter {
         const remotePath = xlatePath(path)
 
         if (showMsgs) {
-            await this.view?.addText(`;; Loading ${remotePath}`)
+            await this.view?.addText(`;; Loading ${remotePath}${EOL}`)
         }
 
         await this.conn?.loadFile(remotePath)
 
         if (showMsgs) {
-            await this.view?.addTextAndPrompt(`;; Done loading ${remotePath}`)
+            await this.view?.addTextAndPrompt(`;; Done loading ${remotePath}${EOL}`)
         }
     }
 
@@ -300,7 +305,7 @@ export class Repl extends EventEmitter {
 
         const resp = await this.conn.disassemble(text, pkg)
 
-        if (resp instanceof response.Eval) {
+        if (resp instanceof response.Eval && resp.result !== undefined) {
             const converted = resp.result.map((i) => convert(i))
             return unescape(converted.join(''))
         }
@@ -315,7 +320,7 @@ export class Repl extends EventEmitter {
 
         const resp = await this.conn.macroExpand(text, pkg)
 
-        if (resp instanceof response.Eval) {
+        if (resp instanceof response.Eval && resp.result !== undefined) {
             const converted = resp.result.map((i) => convert(i))
             return unescape(converted.join(''))
         }
@@ -330,7 +335,7 @@ export class Repl extends EventEmitter {
 
         const resp = await this.conn.macroExpandAll(text, pkg)
 
-        if (resp instanceof response.Eval) {
+        if (resp instanceof response.Eval && resp.result !== undefined) {
             const converted = resp.result.map((i) => convert(i))
             return unescape(converted.join(''))
         }
@@ -360,7 +365,7 @@ export class Repl extends EventEmitter {
 
         const resp = await this.conn.eval(text, pkg)
 
-        if (resp instanceof response.Eval) {
+        if (resp instanceof response.Eval && resp.result !== undefined) {
             const converted = resp.result.map((i) => convert(i))
             return unescape(converted.join(''))
         }
@@ -384,10 +389,10 @@ export class Repl extends EventEmitter {
             if (isReplDoc(editor.document) && inPkg !== undefined) {
                 await this.changePackage(inPkg, output)
             } else {
-                const resp = await this.conn.eval(text, pkg)
+                const resp = await this.conn.replEval(text, pkg)
 
                 if (output) {
-                    if (resp instanceof response.Eval) {
+                    if (resp instanceof response.Eval && resp.result !== undefined) {
                         const str = unescape(resp.result.join(''))
                         await this.view.addTextAndPrompt(str)
                     } else {
@@ -500,7 +505,7 @@ export class Repl extends EventEmitter {
 
         const resp = await this.conn.evalInFrame(threadID, text, ndx, pkg.name)
 
-        if (resp instanceof response.Eval) {
+        if (resp instanceof response.Eval && resp.result !== undefined) {
             return unescape(resp.result.join(''))
         }
     }
@@ -528,20 +533,6 @@ export class Repl extends EventEmitter {
         vscode.window.showInformationMessage(format(msg))
     }
 
-    private async getKwDocs() {
-        if (this.conn === undefined) {
-            return
-        }
-
-        for (const label of allLabels) {
-            const resp = await this.conn.docSymbol(label, ':cl-user')
-
-            if (resp instanceof response.DocSymbol) {
-                this.kwDocs[label] = resp.doc
-            }
-        }
-    }
-
     private onClose() {
         this.view?.close()
 
@@ -567,6 +558,16 @@ export class Repl extends EventEmitter {
             this.view.setPrompt(info.package.prompt)
         } catch (err) {
             vscode.window.showErrorMessage(format(err))
+        }
+    }
+
+    private async handleReadString(event: ReadString) {}
+
+    private async handleWriteString(event: WriteString) {
+        const converted = convert(event.text)
+
+        if (isString(converted)) {
+            await this.view?.addText(converted as string)
         }
     }
 

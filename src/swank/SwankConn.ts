@@ -63,6 +63,9 @@ export interface SwankConn {
     emit(event: 'read-string', swankEvent: event.ReadString): boolean
     on(event: 'read-string', listener: (swankEvent: event.ReadString) => void): this
 
+    emit(event: 'write-string', swankEvent: event.WriteString): boolean
+    on(event: 'write-string', listener: (swankEvent: event.WriteString) => void): this
+
     emit(event: 'msg', message: string): boolean
     on(event: 'msg', listener: (message: string) => void): this
 }
@@ -256,11 +259,11 @@ export class SwankConn extends EventEmitter {
         } else if (resp.info.status === ':ABORT') {
             parsed = response.Abort.parse(resp)
         } else {
-            throw new Error(`Inavlid response ${format(resp)}`)
+            throw new Error(`Invalid response, bad status ${format(resp)}`)
         }
 
         if (parsed === undefined) {
-            throw new Error(`Inavlid response ${format(resp)}`)
+            throw new Error(`Invalid response, parse failed ${format(resp)}`)
         }
 
         return parsed
@@ -341,6 +344,8 @@ export class SwankConn extends EventEmitter {
             this.processDebugReturn(event as event.DebugReturn)
         } else if (event.op === ':READ-STRING') {
             this.processReadString(event as event.ReadString)
+        } else if (event.op === ':WRITE-STRING') {
+            this.processWriteString(event as event.WriteString)
         } else if (event.op === ':NEW-FEATURES') {
             // Ignore
         } else {
@@ -351,6 +356,14 @@ export class SwankConn extends EventEmitter {
     private processReadString(event: event.ReadString) {
         try {
             this.emit('read-string', event)
+        } catch (err) {
+            this.emit('msg', err.toString())
+        }
+    }
+
+    private processWriteString(event: event.WriteString) {
+        try {
+            this.emit('write-string', event)
         } catch (err) {
             this.emit('msg', err.toString())
         }

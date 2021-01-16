@@ -59,6 +59,8 @@ export class SwankResponse {
                 return event.NewFeatures.from(rawEvent)
             case ':READ-STRING':
                 return event.ReadString.from(rawEvent)
+            case ':WRITE-STRING':
+                return event.WriteString.from(rawEvent)
             case ':INDENTATION-UPDATE':
                 return undefined
         }

@@ -10,6 +10,7 @@ export class FileView implements View {
     scheme: string
     name: string
     needJump: boolean = true
+    waitingSave: boolean = false
 
     folder?: vscode.Uri
     replFile?: vscode.Uri
@@ -68,12 +69,12 @@ export class FileView implements View {
 
     async addText(text: string) {
         await this.show()
-        await this.appendLine(`${EOL}${text}`)
+        await this.appendLine(`${text}`)
     }
 
     async addTextAndPrompt(text: string) {
         await this.show()
-        await this.appendLine(`${EOL}${text}${EOL}${this.prompt}`)
+        await this.appendLine(`${text}${this.prompt}`)
     }
 
     setPrompt(prompt: string) {
@@ -91,6 +92,11 @@ export class FileView implements View {
             return
         }
 
+        if (this.waitingSave) {
+            setImmediate(() => this.appendLine(toAppend))
+            return
+        }
+
         const doc = this.replEditor.document
 
         this.needJump = true
@@ -104,7 +110,9 @@ export class FileView implements View {
             builder.insert(pos, text)
         })
 
+        this.waitingSave = true
         await doc.save()
+        this.waitingSave = false
     }
 
     private isEditorVisible(): boolean {
