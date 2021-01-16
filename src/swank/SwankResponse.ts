@@ -63,7 +63,8 @@ export class SwankResponse {
                 return undefined
         }
 
-        throw new Error(`UNHANDLED OP ${format(rawEvent)}`)
+        console.log(`UNHANDLED OP ${format(rawEvent)}`)
+        return undefined
     }
 
     private getRawEvent(expr: SExpr): SwankRawEvent | undefined {

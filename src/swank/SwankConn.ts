@@ -36,6 +36,7 @@ import {
     replEvalReq,
     swankRequireReq,
     replCreateReq,
+    returnStringEvent,
 } from './SwankRequest'
 import { SwankResponse } from './SwankResponse'
 import { ConnInfo } from './Types'
@@ -263,6 +264,13 @@ export class SwankConn extends EventEmitter {
         }
 
         return parsed
+    }
+
+    async returnString(text: string, threadID: number, tag: number) {
+        const event = returnStringEvent(text, threadID, tag)
+        const msg = event.encode()
+
+        await this.writeMessage(msg)
     }
 
     private connError(err: Error) {

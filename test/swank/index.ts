@@ -217,6 +217,10 @@ async function testRepl(conn: SwankConn) {
     await conn.replCreate()
     await conn.swankRequire()
 
+    conn.on('read-string', (event) => {
+        conn.returnString('foo\n', event.threadID, event.tag)
+    })
+
     conn.trace = true
     const resp = await conn.replEval('(read)', 'common-lisp-user')
     console.log(resp)

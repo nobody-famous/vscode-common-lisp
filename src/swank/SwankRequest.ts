@@ -3,22 +3,33 @@ import { toWire } from './SwankUtils'
 
 type emacsRexThread = number | boolean | LispSymbol
 
-export class SwankRequest {
-    msgID: number
+class SwankMessage {
     data: string[]
 
-    constructor(msgID: number, data: string[]) {
-        this.msgID = msgID
+    constructor(data: string[]) {
         this.data = data
+    }
+
+    encode() {
+        const str = Buffer.from(`(${this.data.join(' ')})`, 'utf-8')
+        const len = str.length.toString(16).padStart(6, '0')
+
+        return `${len}${str}`
+    }
+}
+
+export class SwankRequest extends SwankMessage {
+    msgID: number
+
+    constructor(msgID: number, data: string[]) {
+        super(data)
+        this.msgID = msgID
     }
 
     encode() {
         this.data.push(toWire(this.msgID))
 
-        const str = Buffer.from(`(${this.data.join(' ')})`, 'utf-8')
-        const len = str.length.toString(16).padStart(6, '0')
-
-        return `${len}${str}`
+        return super.encode()
     }
 }
 
@@ -194,4 +205,9 @@ export function replEvalReq(msgID: number, form: string, pkg?: string) {
 export function replCreateReq(msgID: number, pkg?: string) {
     const data = [new LispID('swank-repl:create-repl'), false, new LispSymbol('coding-system'), 'utf-8-unix']
     return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
+}
+
+export function returnStringEvent(text: string, threadID: number, tag: number) {
+    const rexData = [toWire(new LispSymbol('emacs-return-string')), toWire(threadID), toWire(tag), toWire(text)]
+    return new SwankMessage(rexData)
 }
