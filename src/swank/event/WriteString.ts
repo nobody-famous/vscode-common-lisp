@@ -1,4 +1,4 @@
-import { exprToNumber, exprToString } from '../../lisp'
+import { exprToString } from '../../lisp'
 import { SwankEvent, SwankRawEvent } from './SwankEvent'
 
 export class WriteString implements SwankEvent {

@@ -302,17 +302,29 @@ export class SwankConn extends EventEmitter {
         while (this.buffer !== undefined && this.buffer.length > 0) {
             this.readResponse()
 
-            if (this.curResponse !== undefined && this.curResponse.hasAllData()) {
-                if (this.trace) {
-                    console.log(`<-- ${this.curResponse.buf?.toString()}`)
-                }
-                const event = this.curResponse.parse()
-
-                if (event !== undefined) {
-                    this.processEvent(event)
-                }
-                this.curResponse = undefined
+            if (this.curResponse === undefined || !this.curResponse.hasAllData()) {
+                continue
             }
+
+            if (this.trace) {
+                console.log(`<-- ${this.curResponse.buf?.toString()}`)
+            }
+
+            this.parseResponse(this.curResponse)
+        }
+    }
+
+    private parseResponse(response: SwankResponse) {
+        try {
+            const event = response.parse()
+
+            if (event !== undefined) {
+                this.processEvent(event)
+            }
+        } catch (err) {
+            this.emit('conn-err', err)
+        } finally {
+            this.curResponse = undefined
         }
     }
 
@@ -346,10 +358,24 @@ export class SwankConn extends EventEmitter {
             this.processReadString(event as event.ReadString)
         } else if (event.op === ':WRITE-STRING') {
             this.processWriteString(event as event.WriteString)
+        } else if (event.op === ':INVALID-RPC') {
+            this.processInvalidRpc(event as event.InvalidRpc)
         } else if (event.op === ':NEW-FEATURES') {
             // Ignore
         } else {
             console.log(`processEvent op ${event.op}`)
+        }
+    }
+
+    private processInvalidRpc(event: event.InvalidRpc) {
+        try {
+            const { resolve, reject } = this.handlerForID(event.msgID)
+
+            this.handlerDone(event.msgID)
+
+            reject(event.reason)
+        } catch (err) {
+            this.emit('conn-err', err)
         }
     }
 

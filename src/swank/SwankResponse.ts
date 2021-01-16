@@ -61,12 +61,13 @@ export class SwankResponse {
                 return event.ReadString.from(rawEvent)
             case ':WRITE-STRING':
                 return event.WriteString.from(rawEvent)
+            case ':INVALID-RPC':
+                return event.InvalidRpc.from(rawEvent)
             case ':INDENTATION-UPDATE':
                 return undefined
         }
 
-        console.log(`UNHANDLED OP ${format(rawEvent)}`)
-        return undefined
+        throw new Error(`UNHANDLED OP ${format(rawEvent)}`)
     }
 
     private getRawEvent(expr: SExpr): SwankRawEvent | undefined {
