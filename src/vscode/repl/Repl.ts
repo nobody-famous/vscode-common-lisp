@@ -19,7 +19,7 @@ export class Repl extends EventEmitter {
     conn?: SwankConn
     view?: View
     inspectorView?: Inspector
-    dbgViews: { [index: number]: DebugView } = {}
+    dbgView?: DebugView
     curPackage: string = ':cl-user'
     ctx: vscode.ExtensionContext
     kwDocs: { [index: string]: string } = {}
@@ -173,30 +173,24 @@ export class Repl extends EventEmitter {
     }
 
     async abort() {
-        const threadIDs = this.getVisibleDebugThreads()
-        if (this.conn === undefined || threadIDs.length === 0) {
+        if (this.conn === undefined || this.dbgView === undefined) {
             vscode.window.showInformationMessage('No debug to abort')
             return
         }
 
-        for (const id of threadIDs) {
-            await this.conn.debugAbort(id)
-        }
+        await this.conn.debugAbort(this.dbgView.event.threadID)
     }
 
     async nthRestart(n: number, level?: number, threadID?: number) {
         let id = threadID
         let lvl = level
 
-        if (id === undefined) {
-            const threadIDs = this.getVisibleDebugThreads()
-            id = threadIDs[0]
-        }
+        if (this.dbgView !== undefined) {
+            lvl = this.dbgView.activate?.level
+            id = id ?? this.dbgView.event.threadID
 
-        if (this.dbgViews[id] !== undefined) {
-            lvl = this.dbgViews[id].activate?.level
-            this.dbgViews[id].stop()
-            delete this.dbgViews[id]
+            this.dbgView.stop()
+            this.dbgView = undefined
         }
 
         if (this.conn === undefined || id === undefined || lvl === undefined) {
@@ -439,48 +433,23 @@ export class Repl extends EventEmitter {
         this.inspectorView.show(resp.title, resp.content)
     }
 
-    private getVisibleDebugThreads(): number[] {
-        const threadIDs: number[] = []
-
-        for (const [key, value] of Object.entries(this.dbgViews)) {
-            if (!value.panel?.visible) {
-                continue
-            }
-
-            const threadID = parseInt(key)
-
-            if (!Number.isNaN(threadID)) {
-                threadIDs.push(threadID)
-            }
-        }
-
-        return threadIDs
-    }
-
     private handleDebugActivate(event: DebugActivate) {
-        const view = this.dbgViews[event.threadID]
-
-        if (view === undefined) {
+        if (this.dbgView === undefined) {
             vscode.window.showInformationMessage(`Debug could not activate ${event.threadID}`)
             return
         }
 
-        view.on('restart', (ndx: number, restart: Restart) => this.nthRestart(ndx, event.level, event.threadID))
+        this.dbgView.on('restart', (ndx: number, restart: Restart) => this.nthRestart(ndx, event.level, event.threadID))
 
-        view.activate = event
+        this.dbgView.activate = event
 
-        view.run()
+        this.dbgView.run()
     }
 
     private handleDebug(event: Debug) {
-        const view = new DebugView(
-            this.ctx,
-            `Debug TH-${event.threadID}`,
-            this.view?.getViewColumn() ?? vscode.ViewColumn.Beside,
-            event
-        )
-
-        // view.on('restart', (ndx: number, restart: Restart) => this.nthRestart(ndx, event.threadID))
+        const view =
+            this.dbgView ??
+            new DebugView(this.ctx, `Debug TH-${event.threadID}`, this.view?.getViewColumn() ?? vscode.ViewColumn.Beside, event)
 
         view.on('frame-restart', async (ndx: number) => this.conn?.frameRestart(event.threadID, ndx))
 
@@ -495,7 +464,7 @@ export class Repl extends EventEmitter {
 
         view.on('frame-locals', async (ndx: number) => this.updateLocals(view, ndx, event.threadID))
 
-        this.dbgViews[event.threadID] = view
+        this.dbgView = view
     }
 
     private async updateLocals(view: DebugView, ndx: number, threadID: number) {
@@ -525,14 +494,12 @@ export class Repl extends EventEmitter {
     }
 
     private async handleDebugReturn(event: DebugReturn) {
-        const dbgView = this.dbgViews[event.threadID]
-
-        if (dbgView === undefined) {
+        if (this.dbgView === undefined) {
             return
         }
 
-        dbgView.stop()
-        delete this.dbgViews[event.threadID]
+        this.dbgView.stop()
+        this.dbgView = undefined
     }
 
     private displayErrMsg(msg: unknown) {

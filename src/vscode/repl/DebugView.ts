@@ -27,8 +27,7 @@ export class DebugView extends EventEmitter {
 
     run() {
         if (this.panel !== undefined) {
-            vscode.window.showInformationMessage('Debug panel already exists')
-            return
+            this.panel.dispose()
         }
 
         this.panel = vscode.window.createWebviewPanel('cl-debug', this.title, this.viewCol, { enableScripts: true })
