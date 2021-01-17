@@ -9,6 +9,7 @@ export class DebugView extends EventEmitter {
     title: string
     panel?: vscode.WebviewPanel
     event: event.Debug
+    activate?: event.DebugActivate
     frameExpanded: { [index: number]: boolean | undefined } = {}
     frameLocals: { [index: number]: FrameVariable[] | undefined } = {}
     frameEval: { [index: number]: string | undefined } = {}

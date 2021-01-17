@@ -38,6 +38,7 @@ import {
     replCreateReq,
     returnStringEvent,
     abortReadEvent,
+    interruptEvent,
 } from './SwankRequest'
 import { SwankResponse } from './SwankResponse'
 import { ConnInfo } from './Types'
@@ -229,8 +230,8 @@ export class SwankConn extends EventEmitter {
         return await this.requestFn(frameEvalReq, response.Eval, threadID, str, frameNum, pkg)
     }
 
-    async nthRestart(threadID: number, restart: number): Promise<response.DebuggerAbort> {
-        return await this.requestFn(nthRestartReq, response.Restart, threadID, restart)
+    async nthRestart(threadID: number, level: number, restart: number): Promise<response.DebuggerAbort> {
+        return await this.requestFn(nthRestartReq, response.Restart, threadID, level, restart)
     }
 
     async debugAbort(threadID: number): Promise<response.DebuggerAbort> {
@@ -279,6 +280,13 @@ export class SwankConn extends EventEmitter {
 
     async abortRead(threadID: number, tag: number) {
         const event = abortReadEvent(threadID, tag)
+        const msg = event.encode()
+
+        await this.writeMessage(msg)
+    }
+
+    async interrupt(threadID: number) {
+        const event = interruptEvent(threadID)
         const msg = event.encode()
 
         await this.writeMessage(msg)

@@ -153,8 +153,8 @@ export function threadsReq(msgID: number, pkg?: string) {
     return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), true)
 }
 
-export function nthRestartReq(msgID: number, threadID: number, restart: number, pkg?: string) {
-    const data = [new LispID('swank:invoke-nth-restart-for-emacs'), 1, restart]
+export function nthRestartReq(msgID: number, threadID: number, level: number, restart: number, pkg?: string) {
+    const data = [new LispID('swank:invoke-nth-restart-for-emacs'), level, restart]
     return emacsRex(msgID, toWire(data), new LispID(pkg ?? 'nil'), threadID)
 }
 
@@ -214,5 +214,10 @@ export function returnStringEvent(text: string, threadID: number, tag: number) {
 
 export function abortReadEvent(threadID: number, tag: number) {
     const rexData = [toWire(new LispSymbol('emacs-abort-read')), toWire(threadID), toWire(tag)]
+    return new SwankMessage(rexData)
+}
+
+export function interruptEvent(threadID: number) {
+    const rexData = [toWire(new LispSymbol('emacs-interrupt')), toWire(threadID)]
     return new SwankMessage(rexData)
 }

@@ -158,7 +158,7 @@ async function testRestarts() {
                 console.log('debugEvent is undefined')
                 return
             }
-            await conn.nthRestart(debugEvent.threadID, 0)
+            await conn.nthRestart(debugEvent.threadID, 1, 0)
         })
 
         await conn.connect()
@@ -218,12 +218,23 @@ async function testRepl(conn: SwankConn) {
     await conn.replCreate()
 
     conn.on('read-string', (event) => {
-        conn.returnString('foo\n', event.threadID, event.tag)
-        // conn.abortRead(event.threadID, event.tag)
+        // conn.returnString('foo\n', event.threadID, event.tag)
+        conn.interrupt(event.threadID)
     })
 
     conn.on('write-string', (event) => {
         console.log('write', event.text)
+    })
+
+    let debugEvent: Debug | undefined = undefined
+    let debugCount: number = 0
+
+    conn.on('debug', (event) => (debugEvent = event))
+    conn.on('activate', async (event) => {
+        if (debugCount === 0) {
+            await conn.nthRestart(event.threadID, 1, 1)
+        }
+        debugCount += 1
     })
 
     conn.trace = true
@@ -239,7 +250,7 @@ async function testRepl(conn: SwankConn) {
     const conn = new SwankConn('localhost', 4005)
 
     conn.on('conn-err', (...args: unknown[]) => console.log('Caught error', ...args))
-    conn.on('debug', (event) => console.log('debug', event))
+    conn.on('debug', (event) => console.log('debug thread', event.threadID))
     conn.on('activate', (event: DebugActivate) => console.log(event))
 
     try {

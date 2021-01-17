@@ -184,20 +184,27 @@ export class Repl extends EventEmitter {
         }
     }
 
-    async nthRestart(n: number) {
-        const threadIDs = this.getVisibleDebugThreads()
-        if (this.conn === undefined || threadIDs.length === 0) {
-            vscode.window.showInformationMessage('No debug to restart')
-            return
+    async nthRestart(n: number, level?: number, threadID?: number) {
+        let id = threadID
+        let lvl = level
+
+        if (id === undefined) {
+            const threadIDs = this.getVisibleDebugThreads()
+            id = threadIDs[0]
         }
 
-        const id = threadIDs[0]
         if (this.dbgViews[id] !== undefined) {
+            lvl = this.dbgViews[id].activate?.level
             this.dbgViews[id].stop()
             delete this.dbgViews[id]
         }
 
-        await this.conn.nthRestart(id, n)
+        if (this.conn === undefined || id === undefined || lvl === undefined) {
+            vscode.window.showInformationMessage('No debug to restart')
+            return
+        }
+
+        await this.conn.nthRestart(id, lvl, n)
     }
 
     async updateConnInfo() {
@@ -458,6 +465,10 @@ export class Repl extends EventEmitter {
             return
         }
 
+        view.on('restart', (ndx: number, restart: Restart) => this.nthRestart(ndx, event.level, event.threadID))
+
+        view.activate = event
+
         view.run()
     }
 
@@ -469,7 +480,7 @@ export class Repl extends EventEmitter {
             event
         )
 
-        view.on('restart', (ndx: number, event: Restart) => this.nthRestart(ndx))
+        // view.on('restart', (ndx: number, restart: Restart) => this.nthRestart(ndx, event.threadID))
 
         view.on('frame-restart', async (ndx: number) => this.conn?.frameRestart(event.threadID, ndx))
 
@@ -566,7 +577,7 @@ export class Repl extends EventEmitter {
         if (text !== undefined) {
             this.conn?.returnString(`${text}${EOL}`, event.threadID, event.tag)
         } else {
-            this.conn?.abortRead(event.threadID, event.tag)
+            this.conn?.interrupt(event.threadID)
         }
     }
 
