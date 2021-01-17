@@ -106,7 +106,9 @@ export class FileView implements View {
 
             this.replEditor!.selection = new vscode.Selection(pos, pos)
 
-            text += toAppend
+            if (toAppend !== EOL) {
+                text += toAppend
+            }
             builder.insert(pos, text)
         })
 

@@ -63,7 +63,11 @@ export class SwankResponse {
                 return event.WriteString.from(rawEvent)
             case ':INVALID-RPC':
                 return event.InvalidRpc.from(rawEvent)
+            case ':READ-ABORTED':
+                return event.ReadAborted.from(rawEvent)
             case ':INDENTATION-UPDATE':
+            case ':PRESENTATION-START':
+            case ':PRESENTATION-END':
                 return undefined
         }
 

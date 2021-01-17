@@ -378,6 +378,8 @@ export class SwankConn extends EventEmitter {
             this.processInvalidRpc(event as event.InvalidRpc)
         } else if (event.op === ':NEW-FEATURES') {
             // Ignore
+        } else if (event.op === ':READ-ABORTED') {
+            // Ignore
         } else {
             console.log(`processEvent op ${event.op}`)
         }
