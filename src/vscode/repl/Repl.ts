@@ -552,7 +552,8 @@ export class Repl extends EventEmitter {
         const converted = convert(event.text)
 
         if (isString(converted)) {
-            await this.view?.addText(converted as string)
+            const str = unescape(converted as string)
+            await this.view?.addText(str)
         }
     }
 
