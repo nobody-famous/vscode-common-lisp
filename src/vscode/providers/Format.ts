@@ -1,18 +1,26 @@
 import * as vscode from 'vscode'
 import { Lexer } from '../../lisp'
+import { ExtensionState } from '../Types'
 import { Formatter, Options } from '../format/Formatter'
 
-export function getDocumentFormatter(): vscode.DocumentFormattingEditProvider {
-    return new Provider()
+export function getDocumentFormatter(state: ExtensionState): vscode.DocumentFormattingEditProvider {
+    return new Provider(state)
 }
 
 class Provider implements vscode.DocumentFormattingEditProvider {
+    state: ExtensionState
+
+    constructor(state: ExtensionState) {
+        this.state = state;
+    }
+
     provideDocumentFormattingEdits(doc: vscode.TextDocument, opts: vscode.FormattingOptions) {
         const lex = new Lexer(doc.getText())
         const tokens = lex.getTokens()
         const formatter = new Formatter(this.readFormatterOptions(), tokens)
         const edits = formatter.format()
 
+        console.log('REPL', this.state.repl);
         return edits.length > 0 ? edits : undefined
     }
 
