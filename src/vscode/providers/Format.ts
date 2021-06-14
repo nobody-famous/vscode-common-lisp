@@ -1,7 +1,8 @@
 import * as vscode from 'vscode'
-import { Lexer } from '../../lisp'
+import { Expr, Lexer, SExpr } from '../../lisp'
 import { ExtensionState } from '../Types'
 import { Formatter, Options } from '../format/Formatter'
+import { getDocumentExprs } from '../Utils'
 
 export function getDocumentFormatter(state: ExtensionState): vscode.DocumentFormattingEditProvider {
     return new Provider(state)
@@ -14,14 +15,32 @@ class Provider implements vscode.DocumentFormattingEditProvider {
         this.state = state;
     }
 
-    provideDocumentFormattingEdits(doc: vscode.TextDocument, opts: vscode.FormattingOptions) {
+    async provideDocumentFormattingEdits(doc: vscode.TextDocument, opts: vscode.FormattingOptions) {
         const lex = new Lexer(doc.getText())
         const tokens = lex.getTokens()
+
+        const exprs = getDocumentExprs(doc);
+        this.findHaveBody(exprs);
+
         const formatter = new Formatter(this.readFormatterOptions(), tokens)
         const edits = formatter.format()
 
-        console.log('REPL', this.state.repl);
         return edits.length > 0 ? edits : undefined
+    }
+
+    private async findHaveBody(exprs: Expr[]) {
+        for (const expr of exprs) {
+            if (expr instanceof SExpr) {
+                const name = expr.getName();
+
+                if (name === undefined) {
+                    continue;
+                }
+
+                console.log(`Need to check ${expr.getName()}`)
+                this.findHaveBody(expr.parts);
+            }
+        }
     }
 
     private readFormatterOptions(): Options {
