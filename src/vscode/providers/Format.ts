@@ -1,5 +1,5 @@
 import * as vscode from 'vscode'
-import { Expr, Lexer, SExpr } from '../../lisp'
+import { Atom, Expr, Lexer, Parser, SExpr } from '../../lisp'
 import { ExtensionState } from '../Types'
 import { Formatter, Options } from '../format/Formatter'
 import { getDocumentExprs } from '../Utils'
@@ -8,19 +8,27 @@ export function getDocumentFormatter(state: ExtensionState): vscode.DocumentForm
     return new Provider(state)
 }
 
+interface HaveBody {
+    [index: number]: { [index: number]: boolean }
+}
+
 class Provider implements vscode.DocumentFormattingEditProvider {
     state: ExtensionState
 
     constructor(state: ExtensionState) {
-        this.state = state;
+        this.state = state
     }
 
     async provideDocumentFormattingEdits(doc: vscode.TextDocument, opts: vscode.FormattingOptions) {
         const lex = new Lexer(doc.getText())
         const tokens = lex.getTokens()
 
-        const exprs = getDocumentExprs(doc);
-        this.findHaveBody(exprs);
+        const exprs = getDocumentExprs(doc)
+        const haveBody: HaveBody = {}
+
+        await this.findHaveBody(doc, exprs, haveBody)
+
+        console.log(haveBody)
 
         const formatter = new Formatter(this.readFormatterOptions(), tokens)
         const edits = formatter.format()
@@ -28,19 +36,61 @@ class Provider implements vscode.DocumentFormattingEditProvider {
         return edits.length > 0 ? edits : undefined
     }
 
-    private async findHaveBody(exprs: Expr[]) {
+    private async findHaveBody(doc: vscode.TextDocument, exprs: Expr[], haveBody: HaveBody) {
+        if (this.state.repl === undefined) {
+            return
+        }
+
         for (const expr of exprs) {
             if (expr instanceof SExpr) {
-                const name = expr.getName();
-
+                const name = expr.getName()
                 if (name === undefined) {
-                    continue;
+                    continue
                 }
 
-                console.log(`Need to check ${expr.getName()}`)
-                this.findHaveBody(expr.parts);
+                const pkg = this.state.pkgMgr.getPackageForLine(doc.fileName, expr.start.line)
+                if (pkg === undefined) {
+                    continue
+                }
+
+                const args = await this.state.repl.getOpArgs(name, pkg.name)
+                if (this.hasBody(args)) {
+                    if (haveBody[expr.start.line] === undefined) {
+                        haveBody[expr.start.line] = {}
+                    }
+
+                    haveBody[expr.parts[0].start.line][expr.parts[0].start.character] = true
+                }
+
+                this.findHaveBody(doc, expr.parts, haveBody)
             }
         }
+
+        return haveBody
+    }
+
+    private hasBody(args: string) {
+        const lex = new Lexer(args)
+        const tokens = lex.getTokens()
+        const parser = new Parser(tokens)
+        const exprs = parser.parse()
+
+        if (exprs.length !== 1) {
+            return false
+        }
+
+        const expr = exprs[0]
+        if (!(expr instanceof SExpr)) {
+            return false
+        }
+
+        for (const part of expr.parts) {
+            if (part instanceof Atom && typeof part.value === 'string' && part.value.toUpperCase() === '&BODY') {
+                return true
+            }
+        }
+
+        return false
     }
 
     private readFormatterOptions(): Options {

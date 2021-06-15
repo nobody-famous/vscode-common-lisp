@@ -112,11 +112,11 @@ export class SExpr extends ExprFormatter {
                 this.formatExpr(new DefSystem(this.state))
                 break
             default:
-                this.formatList(name)
+                this.formatList(curToken, name)
         }
     }
 
-    private formatList(name: string) {
+    private formatList(curToken: FormatToken, name: string) {
         console.log(`formatList ${name}`)
         const expr = new ListExpr(this.state)
 
