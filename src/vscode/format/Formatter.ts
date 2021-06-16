@@ -12,9 +12,9 @@ export class Formatter {
     docTokens: Token[]
     state: State
 
-    constructor(options: Options, tokens: Token[], haveBody: HaveBody) {
+    constructor(options: Options, tokens: Token[], range: vscode.Range, haveBody: HaveBody) {
         this.docTokens = tokens
-        this.state = new State(options, [], new TokenList(), haveBody)
+        this.state = new State(options, range, [], new TokenList(), haveBody)
     }
 
     format(): vscode.TextEdit[] {

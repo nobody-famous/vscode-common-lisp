@@ -1,3 +1,4 @@
+import { Range } from 'vscode'
 import { types } from '../../lisp'
 import { FormatToken } from './FormatToken'
 import { TokenList } from './TokenList'
@@ -15,6 +16,7 @@ export interface HaveBody {
 }
 
 export class State {
+    range: Range
     indent: number[]
     tokenList: TokenList
     lineLength: number = 0
@@ -22,7 +24,8 @@ export class State {
 
     options: Options
 
-    constructor(opts: Options, indent: number[], tokenList: TokenList, haveBody: HaveBody) {
+    constructor(opts: Options, range: Range, indent: number[], tokenList: TokenList, haveBody: HaveBody) {
+        this.range = range
         this.indent = indent
         this.tokenList = tokenList
         this.options = opts
@@ -35,7 +38,14 @@ export function isExprEnd(curToken: FormatToken | undefined): boolean {
 }
 
 export function setTarget(state: State, token: FormatToken, target: string) {
-    token.before.target = target
+    const range = state.range
+
+    if (token.token.start.line < range.start.line || token.token.end.line > range.end.line) {
+        token.before.target = token.before.existing
+    } else {
+        token.before.target = target
+    }
+
     state.lineLength += target.length
 }
 

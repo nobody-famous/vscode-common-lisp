@@ -4,18 +4,18 @@ import { Formatter, HaveBody, Options } from '../format/Formatter'
 import { ExtensionState } from '../Types'
 import { getDocumentExprs } from '../Utils'
 
-export function getDocumentFormatter(state: ExtensionState): vscode.DocumentFormattingEditProvider {
+export function getDocumentFormatter(state: ExtensionState): vscode.DocumentRangeFormattingEditProvider {
     return new Provider(state)
 }
 
-class Provider implements vscode.DocumentFormattingEditProvider {
+class Provider implements vscode.DocumentRangeFormattingEditProvider {
     state: ExtensionState
 
     constructor(state: ExtensionState) {
         this.state = state
     }
 
-    async provideDocumentFormattingEdits(doc: vscode.TextDocument, opts: vscode.FormattingOptions) {
+    async provideDocumentRangeFormattingEdits(doc: vscode.TextDocument, range: vscode.Range, opts: vscode.FormattingOptions) {
         const lex = new Lexer(doc.getText())
         const tokens = lex.getTokens()
 
@@ -24,7 +24,7 @@ class Provider implements vscode.DocumentFormattingEditProvider {
 
         await this.findHaveBody(doc, exprs, haveBody)
 
-        const formatter = new Formatter(this.readFormatterOptions(), tokens, haveBody)
+        const formatter = new Formatter(this.readFormatterOptions(), tokens, range, haveBody)
         const edits = formatter.format()
 
         return edits.length > 0 ? edits : undefined
