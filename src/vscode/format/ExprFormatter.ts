@@ -3,7 +3,7 @@ import * as vscode from 'vscode'
 import { types } from '../../lisp'
 import { Expr } from './Expr'
 import { FormatToken } from './FormatToken'
-import { countNewLines, isExprEnd, setTarget, State, withIncIndent, withIndent } from './Utils'
+import { addToTarget, countNewLines, isExprEnd, setTarget, State, withIncIndent, withIndent } from './Utils'
 
 interface Snapshot {
     ndx: number
@@ -223,7 +223,8 @@ export abstract class ExprFormatter {
         const stack = this.state.indent
         const indent = stack[stack.length - 1]
 
-        token.before.target += ' '.repeat(indent)
-        this.state.lineLength += indent
+        addToTarget(this.state, token, ' '.repeat(indent))
+        // token.before.target += ' '.repeat(indent)
+        // this.state.lineLength += indent
     }
 }

@@ -54,15 +54,6 @@ export const activate = async (ctx: vscode.ExtensionContext) => {
 
     vscode.languages.registerHoverProvider({ scheme: 'file', language: COMMON_LISP_ID }, getHoverProvider(state))
 
-    // vscode.languages.registerDocumentFormattingEditProvider(
-    //     { scheme: 'untitled', language: COMMON_LISP_ID },
-    //     getDocumentFormatter(state)
-    // )
-    // vscode.languages.registerDocumentFormattingEditProvider(
-    //     { scheme: 'file', language: COMMON_LISP_ID },
-    //     getDocumentFormatter(state)
-    // )
-
     vscode.languages.registerDocumentRangeFormattingEditProvider(
         { scheme: 'untitled', language: COMMON_LISP_ID },
         getDocumentFormatter(state)

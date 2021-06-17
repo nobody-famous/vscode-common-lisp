@@ -1,4 +1,4 @@
-import { Range } from 'vscode'
+import { Position, Range } from 'vscode'
 import { types } from '../../lisp'
 import { FormatToken } from './FormatToken'
 import { TokenList } from './TokenList'
@@ -37,19 +37,39 @@ export function isExprEnd(curToken: FormatToken | undefined): boolean {
     return curToken === undefined || curToken.token.type === types.CLOSE_PARENS
 }
 
+export function inRange(range: Range, pos: types.Position) {
+    if (range.start.line > pos.line || range.end.line < pos.line) {
+        return false
+    } else if (range.start.line < pos.line && range.end.line > pos.line) {
+        return true
+    } else if (range.start.line === pos.line) {
+        return range.start.character <= pos.character
+    } else if (range.end.line === pos.line) {
+        return range.end.character >= pos.line
+    }
+
+    return false
+}
+
+export function addToTarget(state: State, token: FormatToken, toAdd: string) {
+    if (!inRange(state.range, token.token.start)) {
+        return
+    }
+
+    token.before.target += toAdd
+    state.lineLength += toAdd.length
+}
+
 export function setTarget(state: State, token: FormatToken, target: string) {
     const range = state.range
 
-    console.log(`setTarget ${token.token.start.line}:${token.token.start.character}`);
-    if (token.token.start.line < range.start.line || token.token.end.line > range.end.line) {
-        console.log(`  OUT RANGE ${token.token.text} ${token.before.existing.length}`)
+    if (!inRange(range, token.token.start)) {
         token.before.target = token.before.existing
     } else {
-        console.log(`  IN RANGE`)
         token.before.target = target
     }
 
-    state.lineLength += target.length
+    state.lineLength += token.before.target.length
 }
 
 export function withIndent(state: State, length: number, fn: () => void) {
