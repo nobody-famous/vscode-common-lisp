@@ -12,6 +12,10 @@ export class RootExpr extends ExprFormatter {
     format() {
         let curToken = this.peekToken()
 
+        if (curToken !== undefined) {
+            setTarget(this.state, curToken, '')
+        }
+
         while (curToken !== undefined) {
             const expr = new Expr(this.state)
 
