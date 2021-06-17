@@ -42,7 +42,7 @@ export function setTarget(state: State, token: FormatToken, target: string) {
 
     console.log(`setTarget ${token.token.start.line}:${token.token.start.character}`);
     if (token.token.start.line < range.start.line || token.token.end.line > range.end.line) {
-        console.log(`  OUT RANGE ${token.before.existing.length}`)
+        console.log(`  OUT RANGE ${token.token.text} ${token.before.existing.length}`)
         token.before.target = token.before.existing
     } else {
         console.log(`  IN RANGE`)

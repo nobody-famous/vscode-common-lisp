@@ -138,7 +138,7 @@ export abstract class ExprFormatter {
                 count = 2
         }
 
-        token.before.target = EOL.repeat(count)
+        setTarget(this.state, token, EOL.repeat(count))
         token.onOwnLine = true
 
         this.state.lineLength = 0
@@ -150,13 +150,14 @@ export abstract class ExprFormatter {
         const count = countNewLines(token.before.existing)
 
         if (count > 0) {
-            token.before.target = EOL.repeat(count)
-            token.before.target += ' '.repeat(diff)
+            let target = `${EOL.repeat(count)}${' '.repeat(diff)}`
+
+            setTarget(this.state, token, target)
 
             this.isMultiline = true
             this.state.lineLength = diff
         } else {
-            token.before.target = token.before.existing
+            setTarget(this.state, token, token.before.existing)
             this.state.lineLength += token.before.target.length
         }
 

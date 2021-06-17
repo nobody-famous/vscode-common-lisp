@@ -2,7 +2,7 @@ import { EOL } from 'os'
 import { types } from '../../lisp'
 import { Expr } from './Expr'
 import { ExprFormatter } from './ExprFormatter'
-import { countNewLines, State } from './Utils'
+import { countNewLines, setTarget, State } from './Utils'
 
 export class RootExpr extends ExprFormatter {
     constructor(state: State) {
@@ -29,12 +29,12 @@ export class RootExpr extends ExprFormatter {
                 const count = countNewLines(curToken.before.existing)
 
                 if (count <= 1) {
-                    curToken.before.target = `${EOL}`
+                    setTarget(this.state, curToken, `${EOL}`)
                 } else {
-                    const cfg = this.state.options.maxBlankLines + 1;
-                    const blanks = Math.min(cfg, count);
+                    const cfg = this.state.options.maxBlankLines + 1
+                    const blanks = Math.min(cfg, count)
 
-                    curToken.before.target = `${EOL}`.repeat(blanks);
+                    setTarget(this.state, curToken, `${EOL}`.repeat(blanks))
                 }
 
                 this.state.lineLength = 0

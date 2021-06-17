@@ -1,5 +1,5 @@
 import { ExprFormatter } from './ExprFormatter'
-import { isExprEnd, State, withIndent } from './Utils'
+import { isExprEnd, setTarget, State, withIndent } from './Utils'
 
 export class DefPkgList extends ExprFormatter {
     constructor(state: State) {
@@ -44,7 +44,7 @@ export class DefPkgList extends ExprFormatter {
             return false
         }
 
-        curToken.before.target = target
+        setTarget(this.state, curToken, target)
         curToken = this.consumeToken()
 
         return true
