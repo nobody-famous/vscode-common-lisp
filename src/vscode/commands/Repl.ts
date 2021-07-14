@@ -20,6 +20,10 @@ import {
     useEditor,
     useRepl,
 } from '../Utils'
+import * as childProcess from 'child_process';
+
+const outputChannel = vscode.window.createOutputChannel("Alive")
+let child: childProcess.ChildProcessWithoutNullStreams | null
 
 let swankOutputChannel: vscode.OutputChannel | undefined = undefined;
 
@@ -66,6 +70,31 @@ export async function inlineEval(state: ExtensionState) {
     })
 }
 
+export async function startReplAndAttach(state: ExtensionState, ctx: vscode.ExtensionContext) {
+    const cmd = vscode.workspace.getConfiguration('alive').swank.startCommand;
+    const outputAndAttach = (data: string) => {
+        outputChannel.appendLine(data)
+
+        if (data.includes("Swank started at port")) {
+            attachRepl(state, ctx)
+        }
+    }
+
+    child?.kill()
+    child = null
+
+    child = childProcess.spawn(cmd[0], cmd.slice(1))
+    child.stdout.setEncoding('utf8');
+    child.stdout.on('data', data => outputAndAttach(data));
+
+    child.stderr.setEncoding('utf8');
+    child.stderr.on('data', data => outputAndAttach(data));
+
+    child.on('error', (err) => {
+        vscode.window.showErrorMessage(`Couldn't spawn Swank server: ${err.message}`)
+    })
+}
+
 export async function attachRepl(state: ExtensionState, ctx: vscode.ExtensionContext) {
     try {
         const showMsgs = state.repl === undefined
@@ -80,6 +109,8 @@ export async function attachRepl(state: ExtensionState, ctx: vscode.ExtensionCon
 }
 
 export async function detachRepl(state: ExtensionState) {
+    child?.kill()
+
     if (state.repl === undefined) {
         return
     }
